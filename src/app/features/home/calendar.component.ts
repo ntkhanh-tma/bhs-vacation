@@ -28,7 +28,7 @@ import { combineLatest } from 'rxjs';
       <!-- Day headers — Sat/Sun tinted -->
       <div class="grid grid-cols-7 mb-1">
         <div *ngFor="let d of dayHeaders; let i = index"
-             class="text-center text-xs font-semibold py-2 rounded"
+             class="text-center text-sm font-semibold py-2 rounded"
              [class.text-[#64748B]]="i < 5"
              [class.text-slate-400]="i >= 5"
              [class.bg-slate-100]="i >= 5">
@@ -46,7 +46,7 @@ import { combineLatest } from 'rxjs';
               <!-- Holiday badges -->
               <ng-container *ngFor="let h of day.holidays">
                 <span [class]="getHolidayBadgeClass(h.country)"
-                      class="text-[9px] rounded px-1 py-0.5 font-medium truncate leading-tight">
+                      class="text-[10px] rounded px-1 py-0.5 font-medium truncate leading-tight">
                   {{ getCountryFlag(h.country) }}{{ h.name }}
                 </span>
               </ng-container>
@@ -54,7 +54,7 @@ import { combineLatest } from 'rxjs';
               <!-- Your vacation badge -->
               <span *ngIf="day.yourVacation"
                     [class]="getYourVacationClass(day.yourVacation.type)"
-                    class="text-[9px] rounded px-1 py-0.5 font-medium leading-tight">
+                    class="text-[10px] rounded px-1 py-0.5 font-medium leading-tight">
                 {{ getYourVacationLabel(day.yourVacation.type) }}
               </span>
 
@@ -63,19 +63,19 @@ import { combineLatest } from 'rxjs';
                 <div *ngFor="let ov of othersToShow(day)"
                      class="flex items-center gap-1 rounded px-1 py-px w-full overflow-hidden"
                      [style.background-color]="ov.member.avatarColor ?? '#94a3b8'">
-                  <span class="text-[10px] leading-none flex-shrink-0 select-none">{{ ov.member.avatarUrl }}</span>
-                  <span class="text-[11px] font-semibold text-white truncate leading-tight">
+                  <span class="text-[11px] leading-none flex-shrink-0 select-none">{{ ov.member.avatarUrl }}</span>
+                  <span class="text-xs font-semibold text-white truncate leading-tight">
                     {{ ov.member.name }}
                   </span>
                 </div>
                 <button *ngIf="overflowCount(day) > 0 && !isExpanded(day)"
                         (click)="toggleExpand(day); $event.stopPropagation()"
-                        class="text-[9px] text-[#003bc4] font-semibold px-1 text-left hover:underline leading-tight">
+                        class="text-[10px] text-[#003bc4] font-semibold px-1 text-left hover:underline leading-tight">
                   +{{ overflowCount(day) }} more
                 </button>
                 <button *ngIf="isExpanded(day) && day.othersVacations.length > MAX_VISIBLE"
                         (click)="toggleExpand(day); $event.stopPropagation()"
-                        class="text-[9px] text-[#64748B] font-medium px-1 text-left hover:underline leading-tight">
+                        class="text-[10px] text-[#64748B] font-medium px-1 text-left hover:underline leading-tight">
                   show less
                 </button>
               </ng-container>
@@ -90,25 +90,25 @@ import { combineLatest } from 'rxjs';
 
       <!-- Legend -->
       <div class="flex flex-wrap gap-4 mt-4 pt-4 border-t border-gray-100">
-        <div class="flex items-center gap-1.5 text-xs text-[#64748B]">
+        <div class="flex items-center gap-1.5 text-sm text-[#64748B]">
           <span class="w-3 h-3 rounded-sm bg-gray-300"></span> Others
         </div>
-        <div class="flex items-center gap-1.5 text-xs text-[#64748B]">
+        <div class="flex items-center gap-1.5 text-sm text-[#64748B]">
           <span class="w-3 h-3 rounded-sm bg-[#B48CF2]"></span> Vacation
         </div>
-        <div class="flex items-center gap-1.5 text-xs text-[#64748B]">
+        <div class="flex items-center gap-1.5 text-sm text-[#64748B]">
           <span class="w-3 h-3 rounded-sm bg-[#06B6D4]"></span> Compensation
         </div>
-        <div class="flex items-center gap-1.5 text-xs text-[#64748B]">
+        <div class="flex items-center gap-1.5 text-sm text-[#64748B]">
           <span class="w-3 h-3 rounded-sm bg-[#F97316]"></span> Event
         </div>
-        <div class="flex items-center gap-1.5 text-xs text-[#64748B]">
+        <div class="flex items-center gap-1.5 text-sm text-[#64748B]">
           <span class="w-3 h-3 rounded-sm bg-[#F7C873]"></span> 🇦🇺 Holiday
         </div>
-        <div class="flex items-center gap-1.5 text-xs text-[#64748B]">
+        <div class="flex items-center gap-1.5 text-sm text-[#64748B]">
           <span class="w-3 h-3 rounded-sm bg-red-100"></span> 🇻🇳 Holiday
         </div>
-        <div class="flex items-center gap-1.5 text-xs text-[#64748B]">
+        <div class="flex items-center gap-1.5 text-sm text-[#64748B]">
           <span class="w-3 h-3 rounded-sm bg-gray-100 border border-gray-200"></span> Weekend
         </div>
       </div>

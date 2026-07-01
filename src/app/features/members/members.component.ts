@@ -141,23 +141,23 @@ const teamColorOf = (name: string): TeamColor => {
                     <div class="w-7 h-7 rounded-full flex items-center justify-center bg-gray-100 text-lg flex-shrink-0 select-none">
                       {{ m.avatarUrl }}
                     </div>
-                    <span class="text-sm font-medium text-[#1E293B]">{{ m.name }}</span>
+                    <span class="text-base font-medium text-[#1E293B]">{{ m.name }}</span>
                   </div>
                 </td>
                 <td class="px-4 py-2.5">
-                  <span class="inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-full"
+                  <span class="inline-flex text-sm font-semibold px-2.5 py-0.5 rounded-full"
                         [style.background-color]="getTeamColor(m.department).bg"
                         [style.color]="getTeamColor(m.department).text">
                     {{ m.department || '—' }}
                   </span>
                 </td>
-                <td class="px-4 py-2.5 text-sm text-[#64748B]">{{ m.position }}</td>
+                <td class="px-4 py-2.5 text-base text-[#64748B]">{{ m.position }}</td>
                 <td class="px-4 py-2.5 text-right">
                   <span *ngIf="getVacationCount(m.username) > 0"
-                        class="inline-flex items-center justify-center text-xs font-semibold bg-[#e8eefb] text-[#003bc4] px-2.5 py-0.5 rounded-full">
+                        class="inline-flex items-center justify-center text-sm font-semibold bg-[#e8eefb] text-[#003bc4] px-2.5 py-0.5 rounded-full">
                     {{ getVacationCount(m.username) }}
                   </span>
-                  <span *ngIf="getVacationCount(m.username) === 0" class="text-xs text-[#94a3b8]">&#8212;</span>
+                  <span *ngIf="getVacationCount(m.username) === 0" class="text-sm text-[#94a3b8]">&#8212;</span>
                 </td>
               </tr>
             </tbody>
@@ -177,29 +177,29 @@ const teamColorOf = (name: string): TeamColor => {
                    [style.background-color]="(tooltipMember.avatarColor ?? '#94a3b8') + '33'">
                 {{ tooltipMember.avatarUrl }}
               </div>
-              <p class="text-sm font-bold text-white leading-tight">{{ tooltipMember.name }}</p>
+              <p class="text-base font-bold text-white leading-tight">{{ tooltipMember.name }}</p>
             </div>
             <!-- Info rows -->
             <div class="px-4 py-3 space-y-2">
               <div class="flex items-center gap-2.5">
-                <span class="text-[11px] w-3.5 text-center flex-shrink-0">&#128101;</span>
-                <span class="inline-flex text-[11px] font-semibold px-2 py-0.5 rounded-full"
+                <span class="text-xs w-3.5 text-center flex-shrink-0">&#128101;</span>
+                <span class="inline-flex text-xs font-semibold px-2 py-0.5 rounded-full"
                       [style.background-color]="getTeamColor(tooltipMember.department).bg"
                       [style.color]="getTeamColor(tooltipMember.department).text">
                   {{ tooltipMember.department || '—' }}
                 </span>
               </div>
               <div class="flex items-center gap-2.5">
-                <span class="text-[11px] w-3.5 text-center flex-shrink-0">&#127991;</span>
-                <span class="text-xs text-[#475569]">{{ tooltipMember.position || '—' }}</span>
+                <span class="text-xs w-3.5 text-center flex-shrink-0">&#127991;</span>
+                <span class="text-sm text-[#475569]">{{ tooltipMember.position || '—' }}</span>
               </div>
               <div class="flex items-center gap-2.5">
-                <span class="text-[11px] w-3.5 text-center flex-shrink-0">&#128187;</span>
-                <span class="text-xs font-mono text-[#475569]">{{ tooltipMember.ip || '—' }}</span>
+                <span class="text-xs w-3.5 text-center flex-shrink-0">&#128187;</span>
+                <span class="text-sm font-mono text-[#475569]">{{ tooltipMember.ip || '—' }}</span>
               </div>
               <div class="flex items-center gap-2.5">
-                <span class="text-[11px] w-3.5 text-center flex-shrink-0">&#128241;</span>
-                <span class="text-xs text-[#475569]">{{ tooltipMember.mobile || '—' }}</span>
+                <span class="text-xs w-3.5 text-center flex-shrink-0">&#128241;</span>
+                <span class="text-sm text-[#475569]">{{ tooltipMember.mobile || '—' }}</span>
               </div>
             </div>
           </div>
@@ -311,8 +311,10 @@ export class MembersComponent implements OnInit, OnDestroy {
   onRowEnter(event: MouseEvent, member: Member): void {
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
     this.tooltipMember = member;
-    this.tooltipTop = rect.bottom + 4;
-    this.tooltipLeft = Math.min(rect.left, window.innerWidth - 232);
+    this.tooltipTop = rect.top;
+    this.tooltipLeft = rect.right + 8 <= window.innerWidth - 224
+      ? rect.right + 8
+      : rect.left - 224 - 8;
   }
 
   onRowLeave(): void {

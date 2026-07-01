@@ -159,7 +159,7 @@ const chipColor = (name: string, seed = 0): ChipColor => {
 
             <!-- Logout -->
             <button (click)="logout()"
-                    class="flex items-center gap-1.5 text-sm border border-gray-200 text-[#64748B] hover:text-[#1E293B] px-3.5 py-2 rounded-lg hover:bg-gray-50 transition-colors flex-shrink-0 whitespace-nowrap">
+                    class="flex items-center gap-1.5 bg-red-400 text-white px-3.5 py-2 rounded-lg text-sm font-medium hover:bg-red-500 whitespace-nowrap flex-shrink-0 transition-colors">
               Logout
             </button>
           </div>
