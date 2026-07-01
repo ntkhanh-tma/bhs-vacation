@@ -65,7 +65,7 @@ import { combineLatest } from 'rxjs';
                      [style.background-color]="ov.member.avatarColor ?? '#94a3b8'">
                   <span class="text-[10px] leading-none flex-shrink-0 select-none">{{ ov.member.avatarUrl }}</span>
                   <span class="text-[9px] font-semibold text-white truncate leading-tight">
-                    {{ ov.member.name.split(' ')[0] }}
+                    {{ ov.member.name }}
                   </span>
                 </div>
                 <button *ngIf="overflowCount(day) > 0 && !isExpanded(day)"

@@ -133,19 +133,19 @@ const chipColor = (name: string, seed = 0): ChipColor => {
           </div>
 
           <!-- Logged-in state -->
-          <div *ngIf="currentUser; else loginBtn" class="flex items-center gap-2 sm:gap-3">
+          <div *ngIf="currentUser; else loginBtn" class="flex items-center gap-3 sm:gap-4">
 
             <!-- Name + chips (chips hidden on very small screens) -->
-            <div class="flex items-center gap-1.5 flex-wrap justify-end">
-              <span class="text-sm font-semibold text-[#1E293B] hidden sm:inline">{{ currentUser.name }}</span>
+            <div class="flex items-center gap-2.5 flex-wrap justify-end">
+              <span class="text-xl font-semibold text-[#1E293B] hidden sm:inline">{{ currentUser.name }}</span>
               <span *ngIf="currentUser.department"
-                    class="hidden md:inline-block text-[11px] font-bold px-2 py-0.5 rounded-full select-none"
+                    class="hidden md:inline-block text-base font-bold px-3 py-1 rounded-full select-none"
                     [style.background-color]="teamChip.bg"
                     [style.color]="teamChip.text">
                 {{ currentUser.department }}
               </span>
               <span *ngIf="currentUser.position"
-                    class="hidden md:inline-block text-[11px] font-bold px-2 py-0.5 rounded-full select-none"
+                    class="hidden md:inline-block text-base font-bold px-3 py-1 rounded-full select-none"
                     [style.background-color]="roleChip.bg"
                     [style.color]="roleChip.text">
                 {{ currentUser.position }}
@@ -155,9 +155,9 @@ const chipColor = (name: string, seed = 0): ChipColor => {
             <!-- Profile / settings -->
             <a routerLink="/profile"
                title="My Profile"
-               class="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors group flex-shrink-0">
+               class="flex items-center justify-center w-12 h-12 rounded-lg hover:bg-gray-100 transition-colors group flex-shrink-0">
               <img src="images/settings.png"
-                   class="w-[18px] h-[18px] object-contain opacity-40 group-hover:opacity-70 transition-opacity" alt="Settings">
+                   class="w-[27px] h-[27px] object-contain opacity-40 group-hover:opacity-70 transition-opacity" alt="Settings">
             </a>
 
             <!-- Logout -->

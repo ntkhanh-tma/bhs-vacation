@@ -168,7 +168,7 @@ interface MonthGroup {
             <!-- Calendar cells -->
             <div class="grid grid-cols-7 gap-0.5">
               <div *ngFor="let cell of group.calendarCells"
-                   class="min-h-[56px] rounded-lg border text-left overflow-hidden"
+                   class="min-h-[80px] rounded-lg border text-left overflow-hidden"
                    [class.border-transparent]="!cell.dayNum"
                    [class.invisible]="!cell.dayNum"
                    [class.border-gray-100]="!!cell.dayNum && !cell.isWeekend"
@@ -176,21 +176,22 @@ interface MonthGroup {
                    [class.border-slate-200]="!!cell.dayNum && cell.isWeekend"
                    [class.bg-slate-100]="!!cell.dayNum && cell.isWeekend">
                 <ng-container *ngIf="cell.dayNum">
-                  <p class="text-[10px] font-medium px-1.5 pt-1 leading-none"
-                     [class.text-slate-400]="cell.isWeekend"
-                     [class.text-[#64748B]]="!cell.isWeekend">
-                    {{ cell.dayNum }}
-                  </p>
-                  <div class="px-1 pb-1 flex flex-wrap gap-0.5 mt-0.5">
-                    <div *ngFor="let entry of cell.entries.slice(0, 5)"
-                         class="w-5 h-5 rounded-full flex items-center justify-center bg-gray-100 text-sm leading-none select-none"
-                         [title]="entry.member.name">
-                      {{ entry.member.avatarUrl }}
+                  <div class="flex flex-col gap-0.5 h-full p-1">
+                    <span class="text-[10px] font-medium leading-none mb-0.5"
+                          [class.text-slate-400]="cell.isWeekend"
+                          [class.text-[#64748B]]="!cell.isWeekend">
+                      {{ cell.dayNum }}
+                    </span>
+                    <div *ngFor="let entry of cell.entries.slice(0, 3)"
+                         class="flex items-center gap-0.5 rounded px-1 py-px w-full overflow-hidden"
+                         [style.background-color]="entry.color">
+                      <span class="text-[9px] leading-none flex-shrink-0 select-none">{{ entry.member.avatarUrl }}</span>
+                      <span class="text-[8px] font-semibold text-white truncate leading-tight">{{ entry.member.name }}</span>
                     </div>
-                    <div *ngIf="cell.entries.length > 5"
-                         class="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-[8px] text-[#64748B] font-semibold">
-                      +{{ cell.entries.length - 5 }}
-                    </div>
+                    <span *ngIf="cell.entries.length > 3"
+                          class="text-[8px] text-[#64748B] font-medium px-1 leading-tight">
+                      +{{ cell.entries.length - 3 }} more
+                    </span>
                   </div>
                 </ng-container>
               </div>
@@ -201,7 +202,7 @@ interface MonthGroup {
               <div *ngFor="let entry of group.entries"
                    class="flex items-center gap-1.5 text-xs text-[#64748B]">
                 <span class="text-base leading-none select-none">{{ entry.member.avatarUrl }}</span>
-                <span class="font-medium">{{ entry.member.name.split(' ')[0] }}</span>
+                <span class="font-medium">{{ entry.member.name }}</span>
                 <span class="text-[#94a3b8]">{{ entry.dayCount }}d</span>
               </div>
             </div>
