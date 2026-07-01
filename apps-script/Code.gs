@@ -57,6 +57,15 @@ function doGet() {
 //   }
 //
 function doPost(e) {
+  // Serialize concurrent executions — prevents duplicate rows when the browser
+  // follows Apps Script's 302 redirect and re-POSTs the same payload.
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitForLock(15000);
+  } catch (lockErr) {
+    return respond({ success: false, error: 'Server busy — please try again.' });
+  }
+
   try {
     var payload     = JSON.parse(e.postData.contents);
     var username    = String(payload.username    || '').trim().toLowerCase();
@@ -107,6 +116,8 @@ function doPost(e) {
     return respond({ success: true });
   } catch (err) {
     return respond({ success: false, error: err.message });
+  } finally {
+    lock.releaseLock();
   }
 }
 

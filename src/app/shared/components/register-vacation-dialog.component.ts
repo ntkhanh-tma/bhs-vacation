@@ -226,7 +226,10 @@ export class RegisterVacationDialogComponent implements OnInit, OnDestroy {
 
     this.dataService.vacations$.pipe(takeUntil(this.destroy$)).subscribe(v => {
       this.allVacations = v;
-      this.loadMonthDates();
+      // Do NOT call loadMonthDates() here — that would wipe the user's
+      // current selections whenever the vacations stream emits (e.g. after
+      // the optimistic update in submitVacation). Month dates are loaded
+      // once on open and again on month navigation.
     });
 
     this.dataService.holidays$.pipe(takeUntil(this.destroy$)).subscribe(h => {
@@ -234,6 +237,7 @@ export class RegisterVacationDialogComponent implements OnInit, OnDestroy {
       this.buildCalendar();
     });
 
+    this.loadMonthDates();
     this.startLockTimer();
   }
 

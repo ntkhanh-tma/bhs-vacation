@@ -6,18 +6,9 @@ import { takeUntil } from 'rxjs/operators';
 import { Holiday, Member, Vacation, VacationType } from '../../core/models/models';
 import { MockDataService } from '../../core/services/mock-data.service';
 
-interface UpcomingVacation {
-  label: string;
-  type: VacationType;
-}
-
-interface VnHoliday {
-  name: string;
-  monthAbbr: string;
-  dayNum: number;
-  proximity: string;
-  isUrgent: boolean;  // today or tomorrow → show highlighted
-}
+type UpcomingItem =
+  | { kind: 'vacation'; date: string; label: string; type: VacationType }
+  | { kind: 'holiday'; date: string; label: string; name: string; monthAbbr: string; dayNum: number; proximity: string; isUrgent: boolean };
 
 @Component({
   selector: 'app-sidebar',
@@ -58,60 +49,56 @@ interface VnHoliday {
           </a>
         </nav>
 
-        <!-- Your Schedule -->
-        <div *ngIf="currentUser && upcomingVacations.length > 0"
+        <!-- Upcoming: vacations + VN holidays merged -->
+        <div *ngIf="currentUser && upcomingItems.length > 0"
              class="border-t border-gray-100 px-3 py-3">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] mb-2">Your Schedule</p>
-          <div class="space-y-1">
-            <div *ngFor="let v of upcomingVacations"
-                 class="flex items-center gap-2 rounded-lg px-2 py-1.5"
-                 [style.background-color]="vacTypeBg(v.type)">
-              <span class="text-[10px] font-medium text-[#64748B] w-11 flex-shrink-0">{{ v.label }}</span>
-              <span class="text-[10px] font-semibold"
-                    [style.color]="vacTypeTextColor(v.type)">
-                {{ v.type === 'Compensation' ? 'Comp' : v.type }}
-              </span>
-            </div>
-          </div>
-          <p *ngIf="moreVacations > 0" class="text-[10px] text-[#94a3b8] mt-1.5 text-center">
-            +{{ moreVacations }} more
-          </p>
-        </div>
-
-        <!-- VN Public Holidays -->
-        <div *ngIf="upcomingVnHolidays.length > 0"
-             class="border-t border-gray-100 px-3 py-3">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] mb-2.5">&#127758; VN Holidays</p>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] mb-2.5">Upcoming</p>
           <div class="space-y-2">
-            <div *ngFor="let h of upcomingVnHolidays"
-                 class="flex items-center gap-2.5 rounded-lg p-2"
-                 [class.bg-red-50]="!h.isUrgent"
-                 [class.bg-red-100]="h.isUrgent">
 
-              <!-- Date chip -->
-              <div class="w-9 h-9 rounded-lg flex flex-col items-center justify-center flex-shrink-0"
-                   [class.bg-red-400]="!h.isUrgent"
-                   [class.bg-red-600]="h.isUrgent">
-                <span class="text-[8px] font-bold text-red-100 uppercase leading-none tracking-wider">{{ h.monthAbbr }}</span>
-                <span class="text-sm font-bold text-white leading-tight">{{ h.dayNum }}</span>
+            <ng-container *ngFor="let item of upcomingItems">
+
+              <!-- Holiday card -->
+              <div *ngIf="item.kind === 'holiday'"
+                   class="flex items-center gap-2.5 rounded-lg p-2"
+                   [class.bg-red-50]="!asHoliday(item).isUrgent"
+                   [class.bg-red-100]="asHoliday(item).isUrgent">
+                <!-- Date chip -->
+                <div class="w-9 h-9 rounded-lg flex flex-col items-center justify-center flex-shrink-0"
+                     [class.bg-red-400]="!asHoliday(item).isUrgent"
+                     [class.bg-red-600]="asHoliday(item).isUrgent">
+                  <span class="text-[8px] font-bold text-red-100 uppercase leading-none tracking-wider">{{ asHoliday(item).monthAbbr }}</span>
+                  <span class="text-sm font-bold text-white leading-tight">{{ asHoliday(item).dayNum }}</span>
+                </div>
+                <!-- Name + proximity -->
+                <div class="min-w-0 flex-1">
+                  <p class="text-[11px] font-semibold text-[#1E293B] leading-tight"
+                     style="overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2">
+                    {{ item.name }}
+                  </p>
+                  <p class="text-[9px] font-semibold leading-tight mt-0.5"
+                     [class.text-red-600]="asHoliday(item).isUrgent"
+                     [class.text-red-400]="!asHoliday(item).isUrgent">
+                    {{ asHoliday(item).proximity }}
+                  </p>
+                </div>
               </div>
 
-              <!-- Name + proximity -->
-              <div class="min-w-0 flex-1">
-                <p class="text-[11px] font-semibold text-[#1E293B] leading-tight"
-                   style="overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2">
-                  {{ h.name }}
-                </p>
-                <p class="text-[9px] font-semibold leading-tight mt-0.5"
-                   [class.text-red-600]="h.isUrgent"
-                   [class.text-red-400]="!h.isUrgent">
-                  {{ h.proximity }}
-                </p>
+              <!-- Vacation row -->
+              <div *ngIf="item.kind === 'vacation'"
+                   class="flex items-center gap-2 rounded-lg px-2 py-1.5"
+                   [style.background-color]="vacTypeBg(asVacation(item).type)">
+                <span class="text-[10px] font-medium text-[#64748B] w-11 flex-shrink-0">{{ item.label }}</span>
+                <span class="text-[10px] font-semibold"
+                      [style.color]="vacTypeTextColor(asVacation(item).type)">
+                  {{ asVacation(item).type === 'Compensation' ? 'Comp' : asVacation(item).type }}
+                </span>
               </div>
-            </div>
+
+            </ng-container>
           </div>
-          <p *ngIf="moreHolidays > 0" class="text-[10px] text-[#94a3b8] mt-2 text-center">
-            +{{ moreHolidays }} more
+
+          <p *ngIf="moreItems > 0" class="text-[10px] text-[#94a3b8] mt-2 text-center">
+            +{{ moreItems }} more
           </p>
         </div>
 
@@ -137,13 +124,11 @@ interface VnHoliday {
 })
 export class SidebarComponent implements OnInit, OnDestroy {
   currentUser: Member | null = null;
-  upcomingVacations: UpcomingVacation[] = [];
-  upcomingVnHolidays: VnHoliday[] = [];
-  moreVacations = 0;
-  moreHolidays = 0;
+  upcomingItems: UpcomingItem[] = [];
+  moreItems = 0;
 
   private destroy$ = new Subject<void>();
-  private readonly MAX_ITEMS = 5;
+  private readonly MAX_ITEMS = 8;
 
   constructor(private dataService: MockDataService) {}
 
@@ -154,13 +139,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
     combineLatest([
       this.dataService.vacations$,
+      this.dataService.holidays$,
       this.dataService.authenticatedUser$,
-    ]).pipe(takeUntil(this.destroy$)).subscribe(([vacations, user]) => {
-      this.buildUpcomingVacations(vacations, user);
-    });
-
-    this.dataService.holidays$.pipe(takeUntil(this.destroy$)).subscribe(h => {
-      this.buildUpcomingVnHolidays(h);
+    ]).pipe(takeUntil(this.destroy$)).subscribe(([vacations, holidays, user]) => {
+      this.buildUpcomingItems(vacations, holidays, user);
     });
   }
 
@@ -169,39 +151,54 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  private buildUpcomingVacations(vacations: Vacation[], user: Member | null): void {
-    if (!user) { this.upcomingVacations = []; this.moreVacations = 0; return; }
-    const todayStr = this.todayStr();
-    const all = vacations
-      .filter(v => v.username === user.username && v.date >= todayStr)
-      .sort((a, b) => a.date.localeCompare(b.date));
-    this.moreVacations = Math.max(0, all.length - this.MAX_ITEMS);
-    this.upcomingVacations = all.slice(0, this.MAX_ITEMS)
-      .map(v => ({ label: this.shortDate(v.date), type: v.type }));
-  }
-
-  private buildUpcomingVnHolidays(holidays: Holiday[]): void {
+  private buildUpcomingItems(vacations: Vacation[], holidays: Holiday[], user: Member | null): void {
     const todayStr = this.todayStr();
     const now = new Date();
     const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 
-    const all = holidays
-      .filter(h => h.date >= todayStr && this.isVn(h.country))
-      .sort((a, b) => a.date.localeCompare(b.date));
+    const vacItems: UpcomingItem[] = user
+      ? vacations
+          .filter(v => v.username === user.username && v.date >= todayStr)
+          .sort((a, b) => a.date.localeCompare(b.date))
+          .map(v => ({
+            kind: 'vacation' as const,
+            date: v.date,
+            label: this.shortDate(v.date),
+            type: v.type,
+          }))
+      : [];
 
-    this.moreHolidays = Math.max(0, all.length - this.MAX_ITEMS);
-    this.upcomingVnHolidays = all.slice(0, this.MAX_ITEMS).map(h => {
-      const [y, m, d] = h.date.split('-').map(Number);
-      const hDate = new Date(y, m - 1, d);
-      const days = Math.round((hDate.getTime() - todayMidnight) / 86_400_000);
-      return {
-        name: h.name,
-        monthAbbr: hDate.toLocaleDateString('en-US', { month: 'short' }),
-        dayNum: d,
-        proximity: this.proximity(days),
-        isUrgent: days <= 1,
-      };
-    });
+    const holItems: UpcomingItem[] = holidays
+      .filter(h => h.date >= todayStr && this.isVn(h.country))
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map(h => {
+        const [y, m, d] = h.date.split('-').map(Number);
+        const hDate = new Date(y, m - 1, d);
+        const days = Math.round((hDate.getTime() - todayMidnight) / 86_400_000);
+        return {
+          kind: 'holiday' as const,
+          date: h.date,
+          label: this.shortDate(h.date),
+          name: h.name,
+          monthAbbr: hDate.toLocaleDateString('en-US', { month: 'short' }),
+          dayNum: d,
+          proximity: this.proximity(days),
+          isUrgent: days <= 1,
+        };
+      });
+
+    const merged = [...vacItems, ...holItems].sort((a, b) => a.date.localeCompare(b.date));
+    this.moreItems = Math.max(0, merged.length - this.MAX_ITEMS);
+    this.upcomingItems = merged.slice(0, this.MAX_ITEMS);
+  }
+
+  // Narrowing helpers — Angular templates can't narrow union types directly
+  asHoliday(item: UpcomingItem) {
+    return item as Extract<UpcomingItem, { kind: 'holiday' }>;
+  }
+
+  asVacation(item: UpcomingItem) {
+    return item as Extract<UpcomingItem, { kind: 'vacation' }>;
   }
 
   private proximity(days: number): string {
