@@ -74,17 +74,6 @@ export class DataService {
     try { localStorage.removeItem(SESSION_KEY); } catch {}
   }
 
-  // ── Display name helpers ──────────────────────────────────────────────────
-
-  getFullDisplayName(member: Member): string {
-    const parts = [member.department, member.position].filter(Boolean);
-    return parts.length ? `${member.name} (${parts.join(' | ')})` : member.name;
-  }
-
-  getShortDisplayName(member: Member): string {
-    return member.department ? `${member.name} (${member.department})` : member.name;
-  }
-
   // ── Vacation submission ───────────────────────────────────────────────────
 
   getLockRemainingMs(username: string): number {

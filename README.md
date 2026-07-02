@@ -22,6 +22,8 @@ A lightweight team vacation scheduling SPA built with **Angular 20** and hosted 
 
 **Responsive layout:** Full support for desktop (≥1024px), tablet, and mobile. The sidebar is an off-canvas overlay on small screens with a hamburger toggle; it becomes an inline column on desktop. Calendar and timeline grids use horizontal scroll when viewport is too narrow.
 
+**Daily quote:** The header shows a random quote fetched from [API Ninjas](https://api-ninjas.com/api/quotes) on load, with a book/source title shown next to the author when the API provides one. To avoid burning through the free-tier quota, a fetched quote is cached in `localStorage` for 30 minutes — reloads and manual refreshes within that window reuse the cached quote instead of calling the API again. If API Ninjas is unreachable, it falls back to `dummyjson.com/quotes/random`.
+
 ---
 
 ## Tech stack
@@ -31,6 +33,7 @@ A lightweight team vacation scheduling SPA built with **Angular 20** and hosted 
 - **RxJS BehaviorSubject** — lightweight in-memory state (no NgRx); single `DataService` owns all streams
 - **Google Sheets API v4** — read-only data source for members, holidays, and vacation records
 - **Google Apps Script** — write proxy for vacation submissions and profile updates (Sheets API requires OAuth for writes; Apps Script runs under the sheet owner's account)
+- **API Ninjas Quotes API** — header's daily quote, with a `dummyjson.com` fallback on failure
 - **GitHub Actions + GitHub Pages** — CI/CD; pushes to `main` trigger a production build deployed to the `github-page` branch
 
 ---
@@ -83,9 +86,10 @@ The earliest registerable month is computed by `getEarliestAllowedMonth()` in th
 ```typescript
 getEarliestAllowedMonth(): { year: number; month: number } {
   const today = new Date();
-  const offset = today.getDate() >= 20 ? 2 : 1;
-  const target = new Date(today.getFullYear(), today.getMonth() + offset, 1);
-  return { year: target.getFullYear(), month: target.getMonth() + 1 };
+  let month = today.getMonth() + 1 + (today.getDate() >= 20 ? 2 : 1);
+  let year = today.getFullYear();
+  if (month > 12) { month -= 12; year++; }
+  return { year, month };
 }
 ```
 
@@ -158,18 +162,10 @@ Nav tiles filter based on auth state — guests see only Home and Holidays. Hist
 Finds the row where column A = `id` AND column F = `authUsername`. Updates any of: B (DC), C (Team), F (Username), G (IP), H (Public IP), I (PC Name), J (MAC Address), K (BHS Email), L (Mobile), M (Birthday). Uses `tryLock(10000)` to prevent concurrent writes.
 
 **Vacation changes (default, `action` absent or `"vacation"`):**
-
-Add days:
+```json
+{ "username": "john", "month": "07/2026", "type": "Vacation", "addDates": ["2026-07-15"], "removeDates": ["2026-07-10"] }
 ```
-month|username|date1,date2,...|type
-```
-Validates `type` against `['Vacation', 'Compensation', 'Event']`, defaults to `'Vacation'`. Appends one row per date: `[month, username, date, type]`.
-
-Remove days:
-```
-month|username|date1,date2,...
-```
-Sets the Type column to `Deleted` (soft-delete) for rows matching `username + date`.
+Validates `type` against `['Vacation', 'Compensation', 'Event']`, defaults to `'Vacation'`. `removeDates` are processed first — matching rows (by `username` + `date`) have their Type column set to `Deleted` (soft-delete). `addDates` are then appended as one new row each (`[month, username, date, type]`), deduplicated against every non-`Deleted` row already in the sheet for that `username + date` — so a previously deleted date can be freely re-added.
 
 The request body is sent as `Content-Type: text/plain` to keep the request "simple" (no CORS preflight). Apps Script follows a 302 redirect before responding; a preflight would not survive that redirect.
 
@@ -199,6 +195,7 @@ cp .env.example .env.local
 GOOGLE_API_KEY=AIzaSy...
 GOOGLE_SHEET_ID=1jTy6D...
 VACATION_API_URL=https://script.google.com/macros/s/.../exec
+API_NINJAS_KEY=your_api_ninjas_key_here
 ```
 
 ### 3 — Run
@@ -251,6 +248,7 @@ The workflow (`.github/workflows/deploy.yml`) fires on every push to `main`:
 | `GOOGLE_API_KEY` | Google API key |
 | `GOOGLE_SHEET_ID` | Spreadsheet ID |
 | `VACATION_API_URL` | Apps Script Web App URL |
+| `API_NINJAS_KEY` | API Ninjas key (daily quote widget) |
 
 ### Pages (Settings → Pages)
 - Source: **Deploy from a branch**
@@ -265,7 +263,7 @@ If you use a custom domain or a user/org page at `/`, add a repository variable 
 ```
 src/
   app/
-    app.ts                                    # Root: header, sidebar, router outlet, auth state, hamburger
+    app.ts                                    # Root: header, sidebar, router outlet, auth state, hamburger, daily quote
     app.routes.ts                             # Lazy-loaded routes: /, /history, /members, /holidays, /profile
     app.config.ts                             # provideRouter, provideHttpClient, provideAnimationsAsync
     core/

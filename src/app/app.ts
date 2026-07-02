@@ -105,9 +105,8 @@ const chipColor = (name: string, seed = 0): ChipColor => {
 
             <!-- Quote card -->
             <div *ngIf="!quoteLoading && quote"
-                 class="relative max-w-md text-center px-7 py-2 group rounded-xl
-                        bg-gradient-to-r from-blue-50/70 via-violet-50/50 to-indigo-50/70"
-                 [title]="quote.quote + ' — ' + quote.author + (quote.work ? ', ' + quote.work : '')">
+                 class="relative max-w-xl text-center px-7 py-2 group rounded-xl
+                        bg-gradient-to-r from-blue-50/70 via-violet-50/50 to-indigo-50/70">
               <!-- Decorative opening mark -->
               <span class="absolute top-0.5 left-2 text-4xl font-serif leading-none select-none
                            bg-gradient-to-br from-blue-400 to-violet-500 bg-clip-text text-transparent">&ldquo;</span>
@@ -116,7 +115,7 @@ const chipColor = (name: string, seed = 0): ChipColor => {
                            bg-gradient-to-br from-violet-500 to-indigo-500 bg-clip-text text-transparent">&rdquo;</span>
 
               <!-- Quote text — 25% bigger than original 11px -->
-              <p class="font-serif italic text-[14px] leading-snug text-[#3d4f6a] line-clamp-2">
+              <p class="font-serif italic text-[14px] leading-snug text-[#3d4f6a]">
                 {{ quote.quote }}
               </p>
 
