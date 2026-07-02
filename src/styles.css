@@ -5,3 +5,14 @@
 html, body { height: 100%; margin: 0; }
 body { font-family: Roboto, "Helvetica Neue", sans-serif; }
 app-root { display: block; height: 100%; }
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 6px 1px rgba(0, 59, 196, 0.55), 0 0 0 0 rgba(0, 59, 196, 0); }
+  50%      { box-shadow: 0 0 18px 5px rgba(0, 59, 196, 0.85), 0 0 28px 10px rgba(0, 59, 196, 0.35); }
+}
+.btn-glow {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+.btn-glow:hover {
+  animation-play-state: paused;
+}

@@ -4,12 +4,13 @@ import { CalendarComponent } from './calendar.component';
 import { DataService } from '../../core/services/data.service';
 import { Member, Vacation } from '../../core/models/models';
 import { RegisterVacationDialogComponent } from '../../shared/components/register-vacation-dialog.component';
+import { LeaveReminderDialogComponent } from '../../shared/components/leave-reminder-dialog.component';
 import { combineLatest } from 'rxjs';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, CalendarComponent, RegisterVacationDialogComponent],
+  imports: [CommonModule, CalendarComponent, RegisterVacationDialogComponent, LeaveReminderDialogComponent],
   template: `
     <div class="flex flex-col lg:flex-row gap-6">
       <!-- Main calendar area -->
@@ -20,7 +21,7 @@ import { combineLatest } from 'rxjs';
             <button
               *ngIf="currentUser"
               (click)="showRegisterDialog = true"
-              class="flex items-center gap-1.5 bg-[#003bc4] text-white px-3.5 py-2 rounded-lg text-sm font-medium hover:bg-[#002da3] whitespace-nowrap flex-shrink-0"
+              class="btn-glow flex items-center gap-1.5 bg-[#003bc4] text-white px-3.5 py-2 rounded-lg text-sm font-medium hover:bg-[#002da3] whitespace-nowrap flex-shrink-0 transition-colors"
             >
               <img src="images/holidays.png" class="w-4 h-4 object-contain brightness-0 invert" alt="">
               Register Vacation
@@ -91,10 +92,17 @@ import { combineLatest } from 'rxjs';
       (close)="showRegisterDialog = false"
       (submitted)="onVacationRegistered()"
     ></app-register-vacation-dialog>
+
+    <!-- Leave Reminder Dialog -->
+    <app-leave-reminder-dialog
+      *ngIf="showLeaveReminder"
+      (close)="showLeaveReminder = false"
+    ></app-leave-reminder-dialog>
   `,
 })
 export class HomeComponent implements OnInit {
   showRegisterDialog = false;
+  showLeaveReminder = false;
   currentUser: Member | null = null;
   memberCount = 0;
   vacationCount = 0;
@@ -120,5 +128,6 @@ export class HomeComponent implements OnInit {
 
   onVacationRegistered(): void {
     this.todayAbsentees = this.dataService.getTodayAbsentees();
+    this.showLeaveReminder = true;
   }
 }

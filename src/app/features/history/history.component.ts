@@ -79,7 +79,7 @@ interface MonthGroup {
           <h3 class="text-base font-semibold text-[#1E293B]">{{ group.label }}</h3>
           <button (click)="exportMonth(group)"
                   title="Export month as image"
-                  class="flex items-center gap-1.5 text-xs text-[#64748B] hover:text-[#1E293B] border border-gray-200 rounded-lg px-2.5 py-1.5 hover:bg-gray-50 transition-colors">
+                  class="flex items-center gap-1.5 bg-green-600 text-white px-3.5 py-2 rounded-lg text-sm font-medium hover:bg-green-700 whitespace-nowrap flex-shrink-0 transition-colors">
             &#128247; Export
           </button>
         </div>
@@ -102,8 +102,8 @@ interface MonthGroup {
                   {{ entry.member.avatarUrl }}
                 </div>
                 <div class="min-w-0 flex-1">
-                  <p class="text-xs font-semibold text-[#1E293B] truncate">{{ entry.member.name }}</p>
-                  <p class="text-[10px] text-[#94a3b8]">
+                  <p class="text-sm font-semibold text-[#1E293B] truncate">{{ entry.member.name }}</p>
+                  <p class="text-xs text-[#94a3b8]">
                     {{ entry.dayCount }} day{{ entry.dayCount !== 1 ? 's' : '' }}
                     · {{ entry.dateRange }}
                   </p>
@@ -116,7 +116,7 @@ interface MonthGroup {
               <!-- Day tick headers -->
               <div class="h-9 flex items-end border-b border-gray-100 bg-gray-50/80 px-3 pb-1.5">
                 <div *ngFor="let tick of getMonthTicks(group)"
-                     class="text-[10px] text-[#94a3b8] select-none"
+                     class="text-xs text-[#94a3b8] select-none"
                      [style.width.%]="tick.widthPct">
                   {{ tick.label }}
                 </div>
@@ -157,7 +157,7 @@ interface MonthGroup {
             <!-- Day-of-week headers -->
             <div class="grid grid-cols-7 mb-1">
               <div *ngFor="let h of dayHeaders; let i = index"
-                   class="text-center text-[11px] font-semibold py-1.5 rounded"
+                   class="text-center text-sm font-semibold py-1.5 rounded"
                    [class.text-slate-400]="i >= 5"
                    [class.text-[#64748B]]="i < 5"
                    [class.bg-slate-50]="i >= 5">
@@ -168,7 +168,7 @@ interface MonthGroup {
             <!-- Calendar cells -->
             <div class="grid grid-cols-7 gap-0.5">
               <div *ngFor="let cell of group.calendarCells"
-                   class="min-h-[80px] rounded-lg border text-left overflow-hidden"
+                   class="min-h-[92px] rounded-lg border text-left overflow-hidden"
                    [class.border-transparent]="!cell.dayNum"
                    [class.invisible]="!cell.dayNum"
                    [class.border-gray-100]="!!cell.dayNum && !cell.isWeekend"
@@ -176,20 +176,20 @@ interface MonthGroup {
                    [class.border-slate-200]="!!cell.dayNum && cell.isWeekend"
                    [class.bg-slate-100]="!!cell.dayNum && cell.isWeekend">
                 <ng-container *ngIf="cell.dayNum">
-                  <div class="flex flex-col gap-0.5 h-full p-1">
-                    <span class="text-[10px] font-medium leading-none mb-0.5"
+                  <div class="flex flex-col gap-1 h-full p-1.5">
+                    <span class="text-sm font-semibold leading-none mb-0.5"
                           [class.text-slate-400]="cell.isWeekend"
                           [class.text-[#64748B]]="!cell.isWeekend">
                       {{ cell.dayNum }}
                     </span>
                     <div *ngFor="let entry of cell.entries.slice(0, 3)"
-                         class="flex items-center gap-0.5 rounded px-1 py-px w-full overflow-hidden"
+                         class="flex items-center gap-1 rounded px-1 py-0.5 w-full overflow-hidden"
                          [style.background-color]="entry.color">
-                      <span class="text-[9px] leading-none flex-shrink-0 select-none">{{ entry.member.avatarUrl }}</span>
-                      <span class="text-[8px] font-semibold text-white truncate leading-tight">{{ entry.member.name }}</span>
+                      <span class="text-xs leading-none flex-shrink-0 select-none">{{ entry.member.avatarUrl }}</span>
+                      <span class="text-[11px] font-semibold text-white truncate leading-tight">{{ entry.member.name }}</span>
                     </div>
                     <span *ngIf="cell.entries.length > 3"
-                          class="text-[8px] text-[#64748B] font-medium px-1 leading-tight">
+                          class="text-[11px] text-[#64748B] font-medium px-1 leading-tight">
                       +{{ cell.entries.length - 3 }} more
                     </span>
                   </div>
@@ -200,8 +200,8 @@ interface MonthGroup {
             <!-- Legend -->
             <div *ngIf="group.entries.length > 0" class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap gap-x-3 gap-y-1.5">
               <div *ngFor="let entry of group.entries"
-                   class="flex items-center gap-1.5 text-xs text-[#64748B]">
-                <span class="text-base leading-none select-none">{{ entry.member.avatarUrl }}</span>
+                   class="flex items-center gap-1.5 text-sm text-[#64748B]">
+                <span class="text-lg leading-none select-none">{{ entry.member.avatarUrl }}</span>
                 <span class="font-medium">{{ entry.member.name }}</span>
                 <span class="text-[#94a3b8]">{{ entry.dayCount }}d</span>
               </div>

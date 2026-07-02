@@ -12,13 +12,17 @@ import { combineLatest } from 'rxjs';
   template: `
     <div>
       <!-- Calendar header -->
-      <div class="flex items-center gap-4 mb-4">
-        <button (click)="prevMonth()" class="p-1 rounded hover:bg-gray-100 text-[#64748B]">&#8249;</button>
-        <div>
-          <h2 class="text-lg font-bold text-[#1E293B]">{{ monthLabel }}</h2>
+      <div class="inline-flex items-center gap-4 mb-4 bg-gradient-to-r from-[#e8eefb] to-white border border-[#e8eefb] rounded-xl px-4 py-2.5">
+        <button (click)="prevMonth()"
+                aria-label="Previous month"
+                class="w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 shadow-sm text-[#003bc4] text-xl font-bold leading-none hover:bg-[#003bc4] hover:text-white hover:border-[#003bc4] hover:shadow-md hover:scale-110 active:scale-95 transition-all duration-200">&#8249;</button>
+        <div class="text-center min-w-[170px]">
+          <h2 class="text-xl font-bold text-[#1E293B]">{{ monthLabel }}</h2>
           <p class="text-xs text-[#64748B]">{{ subtitle }}</p>
         </div>
-        <button (click)="nextMonth()" class="p-1 rounded hover:bg-gray-100 text-[#64748B]">&#8250;</button>
+        <button (click)="nextMonth()"
+                aria-label="Next month"
+                class="w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 shadow-sm text-[#003bc4] text-xl font-bold leading-none hover:bg-[#003bc4] hover:text-white hover:border-[#003bc4] hover:shadow-md hover:scale-110 active:scale-95 transition-all duration-200">&#8250;</button>
       </div>
 
       <!-- Scrollable wrapper keeps the grid readable on small screens -->
