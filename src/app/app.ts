@@ -10,9 +10,20 @@ import { Member } from './core/models/models';
 import { environment } from '../environments/environment';
 
 interface DailyQuote {
+  text: string;
+  author?: string; // only present for the fallback (non-riddle) quote
+  answer?: string; // only present for riddles
+}
+
+interface RiddleApiResponse {
+  title: string;
+  question: string;
+  answer: string;
+}
+
+interface FallbackQuoteApiResponse {
   quote: string;
   author: string;
-  work?: string;
 }
 
 interface CachedQuote {
@@ -114,19 +125,33 @@ const chipColor = (name: string, seed = 0): ChipColor => {
               <span class="absolute bottom-0.5 right-2 text-4xl font-serif leading-none select-none
                            bg-gradient-to-br from-violet-500 to-indigo-500 bg-clip-text text-transparent">&rdquo;</span>
 
-              <!-- Quote text — 25% bigger than original 11px -->
+              <!-- Quote/riddle text — 25% bigger than original 11px -->
               <p class="font-serif italic text-[14px] leading-snug text-[#3d4f6a]">
-                {{ quote.quote }}
+                {{ quote.text }}
               </p>
 
-              <!-- Attribution row — 25% bigger than original 10px -->
-              <div class="flex items-center justify-center gap-1.5 mt-1">
+              <!-- Attribution row — only for the fallback quote API, riddles have no author -->
+              <div *ngIf="quote.author" class="flex items-center justify-center gap-1.5 mt-1">
                 <span class="text-xs font-semibold bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
                   — {{ quote.author }}
                 </span>
-                <span *ngIf="quote.work" class="text-xs italic text-[#94A3B8]">
-                  , {{ quote.work }}
-                </span>
+              </div>
+
+              <!-- Riddle answer reveal -->
+              <div *ngIf="quote.answer" class="mt-1.5">
+                <button *ngIf="!answerRevealed"
+                        (click)="answerRevealed = true"
+                        class="text-[11px] font-semibold text-white px-3 py-1 rounded-full
+                               bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-600 hover:to-blue-600
+                               shadow-sm transition-all">
+                  &#128269; Click to Reveal Answer
+                </button>
+                <div *ngIf="answerRevealed"
+                     class="answer-reveal inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
+                            bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 border border-amber-200 shadow-sm">
+                  <span class="text-[10px] font-bold uppercase tracking-wide text-amber-600">&#10024; Answer</span>
+                  <span class="text-xs font-medium text-amber-900">{{ quote.answer }}</span>
+                </div>
               </div>
 
               <!-- Hover-reveal refresh -->
@@ -199,6 +224,13 @@ const chipColor = (name: string, seed = 0): ChipColor => {
       (loggedIn)="showLoginDialog = false"
     ></app-login-dialog>
   `,
+  styles: [`
+    @keyframes answerReveal {
+      0%   { opacity: 0; transform: translateY(-4px) scale(0.96); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .answer-reveal { animation: answerReveal 0.3s ease-out; }
+  `],
 })
 export class AppComponent implements OnInit {
   showLoginDialog = false;
@@ -211,6 +243,7 @@ export class AppComponent implements OnInit {
 
   quote: DailyQuote | null = null;
   quoteLoading = true;
+  answerRevealed = false;
 
   constructor(private dataService: DataService, private router: Router, private http: HttpClient) {}
 
@@ -231,6 +264,8 @@ export class AppComponent implements OnInit {
   }
 
   fetchQuote(): void {
+    this.answerRevealed = false;
+
     const cached = this.readCachedQuote();
     if (cached) {
       this.quote = cached;
@@ -240,13 +275,18 @@ export class AppComponent implements OnInit {
 
     this.quoteLoading = true;
     this.quote = null;
-    this.http.get<DailyQuote[]>('https://api.api-ninjas.com/v1/quotes', {
+    this.http.get<RiddleApiResponse[]>('https://api.api-ninjas.com/v1/riddles', {
       headers: { 'X-Api-Key': environment.apiNinjasKey },
-      params: { work: 'true' },
     }).pipe(
-      map(res => res?.[0] ?? null),
-      // Fall back to the previous quote API if API Ninjas fails or is unreachable.
-      catchError(() => this.http.get<DailyQuote>('https://dummyjson.com/quotes/random')),
+      map(res => {
+        const riddle = res?.[0];
+        if (!riddle) throw new Error('No riddle returned');
+        return { text: riddle.question, answer: riddle.answer } as DailyQuote;
+      }),
+      // Fall back to a plain quote if API Ninjas fails or is unreachable.
+      catchError(() => this.http.get<FallbackQuoteApiResponse>('https://dummyjson.com/quotes/random').pipe(
+        map(q => ({ text: q.quote, author: q.author } as DailyQuote)),
+      )),
     ).subscribe({
       next: q => {
         this.quote = q;

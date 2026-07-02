@@ -278,11 +278,9 @@ export class HistoryComponent implements OnInit, OnDestroy {
   // ── Export report palette — soft pastel chips on a neutral card ──────────
   private readonly EXPORT_CARD_BG    = '#FFFFFF';
   private readonly EXPORT_PAGE_BG    = '#F1F5F9';
-  private readonly EXPORT_HEADER_BG  = '#0F172A';
-  private readonly EXPORT_HEADER_SUB = '#94A3B8';
-  private readonly EXPORT_ACCENT     = '#003bc4';
-  private readonly EXPORT_ROW_ALT_BG = '#F8FAFC';
-  private readonly EXPORT_WEEKEND_BG = '#EEF2F7';
+  private readonly EXPORT_HEADER_BG  = '#003bc4';
+  private readonly EXPORT_HEADER_SUB = '#BFDBFE';
+  private readonly EXPORT_WEEKEND_BG = '#E2E8F0';
   private readonly EXPORT_DIVIDER    = '#E2E8F0';
   private readonly EXPORT_TYPE_STYLE: Record<VacationType, { bg: string; fg: string; letter: string }> = {
     Vacation:     { bg: '#DCFCE7', fg: '#16A34A', letter: 'V' },
@@ -290,6 +288,11 @@ export class HistoryComponent implements OnInit, OnDestroy {
     Event:        { bg: '#F3E8FF', fg: '#9333EA', letter: 'E' },
   };
   private readonly EXPORT_HOLIDAY_STYLE = { bg: '#DBEAFE', fg: '#2563EB', letter: 'P' };
+  // Deterministic per-team row tint — same djb2-style hash used for team colors elsewhere in the app.
+  private readonly EXPORT_TEAM_ROW_COLORS = [
+    '#EFF6FF', '#F0FDF4', '#FFF7ED', '#FDF4FF', '#FFF1F2',
+    '#ECFEFF', '#FFFBEB', '#F0F9FF', '#F7FEE7', '#FFF0F0',
+  ];
 
   activeBtn   = 'px-3 py-1.5 text-sm rounded-lg bg-[#003bc4] text-white font-medium';
   inactiveBtn = 'px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-[#64748B] hover:bg-gray-50';
@@ -468,16 +471,11 @@ export class HistoryComponent implements OnInit, OnDestroy {
     const dayNumH = 22, weekdayH = 18, headerH = dayNumH + weekdayH;
     const rowH = 28;
     const pad = 22, margin = 20, cardRadius = 18;
-    const titleH = 20, subtitleGap = 6, subtitleH = 15;
-    const gapBeforeGrid = 18, gapAfterGrid = 18, legendH = 16, gapBeforeFooter = 14, footerH = 12;
+    const gapAfterGrid = 18, legendH = 16;
 
     const gridW = teamColW + nameColW + group.daysInMonth * dayColW;
     const cardW = gridW + pad * 2;
-    const cardH = pad
-      + titleH + subtitleGap + subtitleH + gapBeforeGrid
-      + headerH + rowH * rows.length + gapAfterGrid
-      + legendH + gapBeforeFooter + footerH
-      + pad;
+    const cardH = pad + headerH + rowH * rows.length + gapAfterGrid + legendH + pad;
     const canvasW = cardW + margin * 2;
     const canvasH = cardH + margin * 2;
 
@@ -500,34 +498,17 @@ export class HistoryComponent implements OnInit, OnDestroy {
     ctx.fillRect(cardX, cardY, cardW, cardH);
 
     const gridLeft = cardX + pad;
-    let cy = cardY + pad;
+    const gridTop = cardY + pad;
 
-    // Title + subtitle
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillStyle = '#0F172A';
-    ctx.font = 'bold 18px Arial, sans-serif';
-    ctx.fillText('Team Vacation Report', gridLeft, cy);
-    cy += titleH + subtitleGap;
-    ctx.fillStyle = '#64748B';
-    ctx.font = '12px Arial, sans-serif';
-    ctx.fillText(`${group.label} · sorted by team & role`, gridLeft, cy);
-    cy += subtitleH + gapBeforeGrid;
-
-    const gridTop = cy;
-
-    // Header band
+    // Header band — month/year sits over the frozen team+member columns, like a corner label
     ctx.fillStyle = this.EXPORT_HEADER_BG;
     ctx.fillRect(gridLeft, gridTop, gridW, headerH);
-    ctx.fillStyle = this.EXPORT_ACCENT;
-    ctx.fillRect(gridLeft, gridTop + headerH - 3, gridW, 3);
 
-    ctx.fillStyle = this.EXPORT_HEADER_SUB;
-    ctx.font = 'bold 10px Arial, sans-serif';
-    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 13px Arial, sans-serif';
+    ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('TEAM', gridLeft + 10, gridTop + headerH / 2);
-    ctx.fillText('MEMBER', gridLeft + teamColW + 10, gridTop + headerH / 2);
+    ctx.fillText(group.label, gridLeft + (teamColW + nameColW) / 2, gridTop + headerH / 2);
 
     const weekdayAbbrev = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
     for (let d = 1; d <= group.daysInMonth; d++) {
@@ -547,10 +528,8 @@ export class HistoryComponent implements OnInit, OnDestroy {
     rows.forEach((entry, i) => {
       const y = gridBodyTop + i * rowH;
 
-      if (i % 2 === 1) {
-        ctx.fillStyle = this.EXPORT_ROW_ALT_BG;
-        ctx.fillRect(gridLeft, y, gridW, rowH);
-      }
+      ctx.fillStyle = this.teamRowColor(entry.member.department);
+      ctx.fillRect(gridLeft, y, gridW, rowH);
 
       for (let d = 1; d <= group.daysInMonth; d++) {
         const dow = new Date(group.year, group.month - 1, d).getDay();
@@ -606,7 +585,7 @@ export class HistoryComponent implements OnInit, OnDestroy {
     ctx.lineTo(gridLeft + gridW, gridBodyBottom + 0.5);
     ctx.stroke();
 
-    cy = gridBodyBottom + gapAfterGrid;
+    const legendY = gridBodyBottom + gapAfterGrid;
 
     // Legend
     const legendItems: { bg: string; fg: string; label: string }[] = [
@@ -621,22 +600,13 @@ export class HistoryComponent implements OnInit, OnDestroy {
     ctx.textBaseline = 'middle';
     ctx.font = '11px Arial, sans-serif';
     legendItems.forEach(item => {
-      this.roundedRectPath(ctx, lx, cy + 1, 14, 14, 4);
+      this.roundedRectPath(ctx, lx, legendY + 1, 14, 14, 4);
       ctx.fillStyle = item.bg;
       ctx.fill();
       ctx.fillStyle = '#475569';
-      ctx.fillText(item.label, lx + 20, cy + 8);
+      ctx.fillText(item.label, lx + 20, legendY + 8);
       lx += 20 + ctx.measureText(item.label).width + 18;
     });
-
-    cy += legendH + gapBeforeFooter;
-
-    // Footer
-    const generatedOn = new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
-    ctx.fillStyle = '#94A3B8';
-    ctx.font = '10px Arial, sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText(`Generated ${generatedOn}`, gridLeft + gridW, cy + footerH / 2);
 
     ctx.restore(); // drop the rounded-card clip
 
@@ -668,6 +638,12 @@ export class HistoryComponent implements OnInit, OnDestroy {
     ctx.arcTo(x, y + h, x, y, rad);
     ctx.arcTo(x, y, x + w, y, rad);
     ctx.closePath();
+  }
+
+  private teamRowColor(team: string): string {
+    let h = 0;
+    for (let i = 0; i < team.length; i++) h = (Math.imul(31, h) + team.charCodeAt(i)) | 0;
+    return this.EXPORT_TEAM_ROW_COLORS[Math.abs(h) % this.EXPORT_TEAM_ROW_COLORS.length];
   }
 
   // ── Preview modal actions ─────────────────────────────────────────────────

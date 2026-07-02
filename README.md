@@ -22,7 +22,7 @@ A lightweight team vacation scheduling SPA built with **Angular 20** and hosted 
 
 **Responsive layout:** Full support for desktop (≥1024px), tablet, and mobile. The sidebar is an off-canvas overlay on small screens with a hamburger toggle; it becomes an inline column on desktop. Calendar and timeline grids use horizontal scroll when viewport is too narrow.
 
-**Daily quote:** The header shows a random quote fetched from [API Ninjas](https://api-ninjas.com/api/quotes) on load, with a book/source title shown next to the author when the API provides one. To avoid burning through the free-tier quota, a fetched quote is cached in `localStorage` for 30 minutes — reloads and manual refreshes within that window reuse the cached quote instead of calling the API again. If API Ninjas is unreachable, it falls back to `dummyjson.com/quotes/random`.
+**Daily riddle:** The header shows a random riddle fetched from [API Ninjas](https://api-ninjas.com/api/riddles) on load, styled like a quote. A "Click to Reveal Answer" button underneath reveals the answer in a small animated badge. To avoid burning through the free-tier quota, the fetched riddle is cached in `localStorage` for 30 minutes — reloads and manual refreshes within that window reuse the cached riddle instead of calling the API again. If API Ninjas is unreachable, it falls back to a plain quote from `dummyjson.com/quotes/random` (no reveal button, since fallback quotes have no answer).
 
 ---
 
@@ -33,7 +33,7 @@ A lightweight team vacation scheduling SPA built with **Angular 20** and hosted 
 - **RxJS BehaviorSubject** — lightweight in-memory state (no NgRx); single `DataService` owns all streams
 - **Google Sheets API v4** — read-only data source for members, holidays, and vacation records
 - **Google Apps Script** — write proxy for vacation submissions and profile updates (Sheets API requires OAuth for writes; Apps Script runs under the sheet owner's account)
-- **API Ninjas Quotes API** — header's daily quote, with a `dummyjson.com` fallback on failure
+- **API Ninjas Riddles API** — header's daily riddle, with a `dummyjson.com` quote fallback on failure
 - **GitHub Actions + GitHub Pages** — CI/CD; pushes to `main` trigger a production build deployed to the `github-page` branch
 
 ---
@@ -248,7 +248,7 @@ The workflow (`.github/workflows/deploy.yml`) fires on every push to `main`:
 | `GOOGLE_API_KEY` | Google API key |
 | `GOOGLE_SHEET_ID` | Spreadsheet ID |
 | `VACATION_API_URL` | Apps Script Web App URL |
-| `API_NINJAS_KEY` | API Ninjas key (daily quote widget) |
+| `API_NINJAS_KEY` | API Ninjas key (daily riddle widget) |
 
 ### Pages (Settings → Pages)
 - Source: **Deploy from a branch**
@@ -263,7 +263,7 @@ If you use a custom domain or a user/org page at `/`, add a repository variable 
 ```
 src/
   app/
-    app.ts                                    # Root: header, sidebar, router outlet, auth state, hamburger, daily quote
+    app.ts                                    # Root: header, sidebar, router outlet, auth state, hamburger, daily riddle
     app.routes.ts                             # Lazy-loaded routes: /, /history, /members, /holidays, /profile
     app.config.ts                             # provideRouter, provideHttpClient, provideAnimationsAsync
     core/
