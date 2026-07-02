@@ -31,12 +31,16 @@ const local = readEnvLocal();
 const apiKey        = local.GOOGLE_API_KEY    ?? process.env.GOOGLE_API_KEY    ?? '';
 const sheetId       = local.GOOGLE_SHEET_ID   ?? process.env.GOOGLE_SHEET_ID   ?? '';
 const vacationApiUrl = local.VACATION_API_URL  ?? process.env.VACATION_API_URL  ?? '';
+const apiNinjasKey  = local.API_NINJAS_KEY    ?? process.env.API_NINJAS_KEY    ?? '';
 
 if (!apiKey || !sheetId) {
   console.warn('[setup-env] WARNING: GOOGLE_API_KEY or GOOGLE_SHEET_ID is empty.');
 }
 if (!vacationApiUrl) {
   console.warn('[setup-env] WARNING: VACATION_API_URL is empty — vacation submission will not work.');
+}
+if (!apiNinjasKey) {
+  console.warn('[setup-env] WARNING: API_NINJAS_KEY is empty — daily quote will not work.');
 }
 
 const envDir = path.join(__dirname, '..', 'src', 'environments');
@@ -48,6 +52,7 @@ export const environment = {
   googleApiKey: '${apiKey}',
   googleSheetId: '${sheetId}',
   vacationApiUrl: '${vacationApiUrl}',
+  apiNinjasKey: '${apiNinjasKey}',
 };
 `;
 

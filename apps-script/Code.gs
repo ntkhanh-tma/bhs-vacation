@@ -120,7 +120,8 @@ function handleVacation(payload) {
     for (var k = 0; k < currentRows.length; k++) {
       var u = String(currentRows[k][1] || '').trim().toLowerCase();
       var d = String(currentRows[k][2] || '').trim();
-      if (u && d) existingKeys[u + '|' + d] = true;
+      var t = String(currentRows[k][3] || '').trim();
+      if (u && d && t !== 'Deleted') existingKeys[u + '|' + d] = true;
     }
 
     for (var j = 0; j < addDates.length; j++) {

@@ -48,6 +48,7 @@ jobs:
           GOOGLE_API_KEY:   ${{ secrets.GOOGLE_API_KEY }}
           GOOGLE_SHEET_ID:  ${{ secrets.GOOGLE_SHEET_ID }}
           VACATION_API_URL: ${{ secrets.VACATION_API_URL }}
+          API_NINJAS_KEY:   ${{ secrets.API_NINJAS_KEY }}
         run: node scripts/setup-env.js
 
       # ── 5. Determine base-href ────────────────────────────────────────────

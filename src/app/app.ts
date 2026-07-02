@@ -7,12 +7,21 @@ import { SidebarComponent } from './shared/components/sidebar.component';
 import { LoginDialogComponent } from './shared/components/login-dialog.component';
 import { DataService } from './core/services/data.service';
 import { Member } from './core/models/models';
+import { environment } from '../environments/environment';
 
 interface DailyQuote {
-  id: number;
   quote: string;
   author: string;
+  work?: string;
 }
+
+interface CachedQuote {
+  quote: DailyQuote;
+  fetchedAt: number;
+}
+
+const QUOTE_CACHE_KEY = 'dailyQuoteCache';
+const QUOTE_CACHE_TTL_MS = 30 * 60 * 1000;
 
 interface ChipColor { bg: string; text: string; }
 
@@ -98,7 +107,7 @@ const chipColor = (name: string, seed = 0): ChipColor => {
             <div *ngIf="!quoteLoading && quote"
                  class="relative max-w-md text-center px-7 py-2 group rounded-xl
                         bg-gradient-to-r from-blue-50/70 via-violet-50/50 to-indigo-50/70"
-                 [title]="quote.quote + ' — ' + quote.author">
+                 [title]="quote.quote + ' — ' + quote.author + (quote.work ? ', ' + quote.work : '')">
               <!-- Decorative opening mark -->
               <span class="absolute top-0.5 left-2 text-4xl font-serif leading-none select-none
                            bg-gradient-to-br from-blue-400 to-violet-500 bg-clip-text text-transparent">&ldquo;</span>
@@ -115,6 +124,9 @@ const chipColor = (name: string, seed = 0): ChipColor => {
               <div class="flex items-center justify-center gap-1.5 mt-1">
                 <span class="text-xs font-semibold bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
                   — {{ quote.author }}
+                </span>
+                <span *ngIf="quote.work" class="text-xs italic text-[#94A3B8]">
+                  , {{ quote.work }}
                 </span>
               </div>
 
@@ -220,12 +232,49 @@ export class AppComponent implements OnInit {
   }
 
   fetchQuote(): void {
+    const cached = this.readCachedQuote();
+    if (cached) {
+      this.quote = cached;
+      this.quoteLoading = false;
+      return;
+    }
+
     this.quoteLoading = true;
     this.quote = null;
-    this.http.get<DailyQuote>('https://dummyjson.com/quotes/random').subscribe({
-      next: q => { this.quote = q; this.quoteLoading = false; },
+    this.http.get<DailyQuote[]>('https://api.api-ninjas.com/v1/quotes', {
+      headers: { 'X-Api-Key': environment.apiNinjasKey },
+      params: { work: 'true' },
+    }).subscribe({
+      next: res => {
+        const q = res?.[0] ?? null;
+        this.quote = q;
+        this.quoteLoading = false;
+        if (q) this.cacheQuote(q);
+      },
       error: () => { this.quoteLoading = false; },
     });
+  }
+
+  /** Returns the cached quote if it was fetched less than 30 minutes ago. */
+  private readCachedQuote(): DailyQuote | null {
+    try {
+      const raw = localStorage.getItem(QUOTE_CACHE_KEY);
+      if (!raw) return null;
+      const cached: CachedQuote = JSON.parse(raw);
+      if (Date.now() - cached.fetchedAt > QUOTE_CACHE_TTL_MS) return null;
+      return cached.quote;
+    } catch {
+      return null;
+    }
+  }
+
+  private cacheQuote(quote: DailyQuote): void {
+    try {
+      const cached: CachedQuote = { quote, fetchedAt: Date.now() };
+      localStorage.setItem(QUOTE_CACHE_KEY, JSON.stringify(cached));
+    } catch {
+      // localStorage unavailable (e.g. private browsing) — skip caching
+    }
   }
 
   logout(): void {
