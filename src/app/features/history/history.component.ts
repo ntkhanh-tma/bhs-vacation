@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { DataService } from '../../core/services/data.service';
-import { Holiday, Member, Vacation, VacationType } from '../../core/models/models';
+import { EventPlan, Holiday, Member, ReleasePlan, Vacation, VacationType } from '../../core/models/models';
 
 interface GanttBar {
   offset: number; // % from left within the track
@@ -275,6 +275,8 @@ export class HistoryComponent implements OnInit, OnDestroy {
   viewMode: 'calendar' | 'timeline' = 'timeline';
   currentUserUsername: string | null = null;
   private holidays: Holiday[] = [];
+  private releasePlans: ReleasePlan[] = [];
+  private eventPlans: EventPlan[] = [];
   private destroy$ = new Subject<void>();
 
   // ── Export preview state ─────────────────────────────────────────────────
@@ -296,6 +298,8 @@ export class HistoryComponent implements OnInit, OnDestroy {
     'Special Leave': { bg: '#F3E8FF', fg: '#9333EA', letter: 'S' },
   };
   private readonly EXPORT_HOLIDAY_STYLE = { bg: '#DBEAFE', fg: '#2563EB', letter: 'P' };
+  private readonly EXPORT_EVENT_COLOR   = '#D97706';
+  private readonly EXPORT_RELEASE_COLOR = '#0EA5E9';
   // Deterministic per-team row tint — same djb2-style hash used for team colors elsewhere in the app.
   private readonly EXPORT_TEAM_ROW_COLORS = [
     '#EFF6FF', '#F0FDF4', '#FFF7ED', '#FDF4FF', '#FFF1F2',
@@ -323,6 +327,8 @@ export class HistoryComponent implements OnInit, OnDestroy {
     });
     this.dataService.vacations$.pipe(takeUntil(this.destroy$)).subscribe(() => this.buildHistory());
     this.dataService.holidays$.pipe(takeUntil(this.destroy$)).subscribe(h => this.holidays = h);
+    this.dataService.releasePlans$.pipe(takeUntil(this.destroy$)).subscribe(r => this.releasePlans = r);
+    this.dataService.eventPlans$.pipe(takeUntil(this.destroy$)).subscribe(e => this.eventPlans = e);
   }
 
   buildHistory(): void {
@@ -496,8 +502,43 @@ export class HistoryComponent implements OnInit, OnDestroy {
     const gapAfterGrid = 18, legendH = 16;
 
     const gridW = teamColW + nameColW + group.daysInMonth * dayColW;
+
+    // ── Annotations: this month's holidays / events / releases ──────────────
+    const monthPrefix = `${group.year}-${String(group.month).padStart(2, '0')}-`;
+    const byDate = <T extends { date: string }>(a: T, b: T) => a.date.localeCompare(b.date);
+    const monthHolidays = this.holidays.filter(h => h.date.startsWith(monthPrefix)).sort(byDate);
+    const monthEvents = this.eventPlans.filter(e => e.date.startsWith(monthPrefix)).sort(byDate);
+    const monthReleases = this.releasePlans.filter(r => r.date.startsWith(monthPrefix)).sort(byDate);
+
+    const annoTitleFont = 'bold 12px Arial, sans-serif';
+    const annoItemFont = '11px Arial, sans-serif';
+    const annoTitleH = 20, annoLineH = 16, annoSectionGap = 10, annoIndent = 16, annoTopGap = 16;
+
+    const measureCtx = document.createElement('canvas').getContext('2d')!;
+    measureCtx.font = annoItemFont;
+    const annoMaxWidth = gridW - annoIndent - 4;
+
+    const annotationSections = ([
+      { title: 'Public Holidays', color: this.EXPORT_HOLIDAY_STYLE.fg, items: monthHolidays.map(h => ({ date: h.date, text: h.name })) },
+      { title: 'Events', color: this.EXPORT_EVENT_COLOR, items: monthEvents.map(e => ({ date: e.date, text: e.description })) },
+      { title: 'Releases', color: this.EXPORT_RELEASE_COLOR, items: monthReleases.map(r => ({ date: r.date, text: r.release })) },
+    ] as { title: string; color: string; items: { date: string; text: string }[] }[])
+      .filter(section => section.items.length > 0)
+      .map(section => ({
+        title: section.title,
+        color: section.color,
+        wrappedLines: section.items.flatMap(item =>
+          this.wrapText(measureCtx, `${this.formatShortDate(item.date)} — ${item.text}`, annoMaxWidth)
+        ),
+      }));
+
+    const annotationsH = annotationSections.length === 0 ? 0 :
+      annoTopGap +
+      annotationSections.reduce((sum, s) => sum + annoTitleH + s.wrappedLines.length * annoLineH, 0) +
+      annoSectionGap * (annotationSections.length - 1);
+
     const cardW = gridW + pad * 2;
-    const cardH = pad + headerH + rowH * rows.length + gapAfterGrid + legendH + pad;
+    const cardH = pad + headerH + rowH * rows.length + gapAfterGrid + legendH + annotationsH + pad;
     const canvasW = cardW + margin * 2;
     const canvasH = cardH + margin * 2;
 
@@ -630,6 +671,32 @@ export class HistoryComponent implements OnInit, OnDestroy {
       lx += 20 + ctx.measureText(item.label).width + 18;
     });
 
+    // Annotations — public holidays / events / releases for the month
+    if (annotationSections.length > 0) {
+      let cursorY = legendY + legendH + annoTopGap;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+
+      annotationSections.forEach((section, si) => {
+        ctx.fillStyle = section.color;
+        this.roundedRectPath(ctx, gridLeft, cursorY + annoTitleH / 2 - 4, 8, 8, 2);
+        ctx.fill();
+        ctx.fillStyle = '#1E293B';
+        ctx.font = annoTitleFont;
+        ctx.fillText(section.title, gridLeft + annoIndent, cursorY + annoTitleH / 2);
+        cursorY += annoTitleH;
+
+        ctx.font = annoItemFont;
+        ctx.fillStyle = '#475569';
+        section.wrappedLines.forEach(line => {
+          ctx.fillText(line, gridLeft + annoIndent, cursorY + annoLineH / 2);
+          cursorY += annoLineH;
+        });
+
+        if (si < annotationSections.length - 1) cursorY += annoSectionGap;
+      });
+    }
+
     ctx.restore(); // drop the rounded-card clip
 
     ctx.strokeStyle = this.EXPORT_DIVIDER;
@@ -661,6 +728,23 @@ export class HistoryComponent implements OnInit, OnDestroy {
     ctx.arcTo(x, y + h, x, y, rad);
     ctx.arcTo(x, y, x + w, y, rad);
     ctx.closePath();
+  }
+
+  private wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let current = '';
+    for (const word of words) {
+      const candidate = current ? `${current} ${word}` : word;
+      if (current && ctx.measureText(candidate).width > maxWidth) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = candidate;
+      }
+    }
+    if (current) lines.push(current);
+    return lines;
   }
 
   private teamRowColor(team: string): string {
