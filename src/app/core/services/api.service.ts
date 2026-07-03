@@ -3,7 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
-import { Member, Holiday, Vacation, VacationType } from '../models/models';
+import { Member, Holiday, Vacation, VacationType, ReleasePlan, EventPlan } from '../models/models';
 
 interface SheetsResponse {
   range: string;
@@ -71,7 +71,7 @@ const animalEmoji = (username: string): string => {
   return ANIMAL_EMOJIS[Math.abs(h) % ANIMAL_EMOJIS.length];
 };
 
-const VALID_TYPES: VacationType[] = ['Vacation', 'Compensation', 'Event'];
+const VALID_TYPES: VacationType[] = ['Vacation', 'Compensation', 'Special Leave'];
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -119,6 +119,28 @@ export class ApiService {
       map(res => this.parseVacations(res.values ?? [])),
       catchError(err => {
         console.error('[ApiService] fetchVacations failed:', err?.error?.error?.message ?? err.message);
+        return of([]);
+      })
+    );
+  }
+
+  fetchReleasePlans(): Observable<ReleasePlan[]> {
+    const url = `${this.base}/Database!ReleasePlan?key=${this.key}`;
+    return this.http.get<SheetsResponse>(url).pipe(
+      map(res => this.parseReleasePlans(res.values ?? [])),
+      catchError(err => {
+        console.error('[ApiService] fetchReleasePlans failed:', err?.error?.error?.message ?? err.message);
+        return of([]);
+      })
+    );
+  }
+
+  fetchEventPlans(): Observable<EventPlan[]> {
+    const url = `${this.base}/Database!EventPlan?key=${this.key}`;
+    return this.http.get<SheetsResponse>(url).pipe(
+      map(res => this.parseEventPlans(res.values ?? [])),
+      catchError(err => {
+        console.error('[ApiService] fetchEventPlans failed:', err?.error?.error?.message ?? err.message);
         return of([]);
       })
     );
@@ -174,7 +196,7 @@ export class ApiService {
 
   private parseMembers(rows: string[][]): Member[] {
     if (!rows.length) return [];
-    // A=ID | B=DC | C=Team | D=Role | E=Name | F=Username |
+    // A=ID | B=Origin | C=Team | D=Role | E=Name | F=Username |
     // G=IP | H=Public IP | I=PC Name | J=MAC Address | K=BHS Email | L=Mobile | M=Birthday
     return rows.slice(1)
       .filter(r => r[5]?.trim())
@@ -210,6 +232,30 @@ export class ApiService {
         country: (row[2] ?? '').trim() || undefined,
       }))
       .filter(h => !!h.date);
+  }
+
+  private parseReleasePlans(rows: string[][]): ReleasePlan[] {
+    if (!rows.length) return [];
+    // Header: ReleaseDate | Release
+    return rows.slice(1)
+      .filter(r => r[0]?.trim())
+      .map(row => ({
+        date:    this.normalizeDate(row[0]),
+        release: (row[1] ?? '').trim(),
+      }))
+      .filter(r => !!r.date && !!r.release);
+  }
+
+  private parseEventPlans(rows: string[][]): EventPlan[] {
+    if (!rows.length) return [];
+    // Header: EventDate | EventDesc
+    return rows.slice(1)
+      .filter(r => r[0]?.trim())
+      .map(row => ({
+        date:        this.normalizeDate(row[0]),
+        description: (row[1] ?? '').trim(),
+      }))
+      .filter(e => !!e.date && !!e.description);
   }
 
   private parseVacations(rows: string[][]): Vacation[] {

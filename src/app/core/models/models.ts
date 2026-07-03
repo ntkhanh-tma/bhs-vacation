@@ -1,4 +1,4 @@
-export type VacationType = 'Vacation' | 'Compensation' | 'Event';
+export type VacationType = 'Vacation' | 'Compensation' | 'Special Leave';
 
 export interface Member {
   id: string;            // A — row identifier, never displayed
@@ -33,6 +33,16 @@ export interface Vacation {
   type: VacationType;
 }
 
+export interface ReleasePlan {
+  date: string; // YYYY-MM-DD
+  release: string;
+}
+
+export interface EventPlan {
+  date: string; // YYYY-MM-DD
+  description: string;
+}
+
 export interface CalendarDay {
   date: Date;
   isCurrentMonth: boolean;
@@ -40,6 +50,8 @@ export interface CalendarDay {
   isToday: boolean;
   isPast: boolean;
   holidays: Holiday[];
+  releases: ReleasePlan[];
+  events: EventPlan[];
   yourVacation?: Vacation;
   othersVacations: { vacation: Vacation; member: Member }[];
 }

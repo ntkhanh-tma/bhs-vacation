@@ -15,16 +15,16 @@
  *
  * Sheet: Vacation-Plan
  *   Row 1 (header): Month | Username | Date | Type
- *   Row 2+:         MM/YYYY | username | YYYY-MM-DD | Vacation|Compensation|Event|Deleted
+ *   Row 2+:         MM/YYYY | username | YYYY-MM-DD | Vacation|Compensation|Special Leave|Deleted
  *
  * Sheet: Team-Info
- *   Row 1 (header): ID | DC | Team | Role | Name | Username | IP | Public IP | PC Name | MAC Address | BHS Email | Mobile | Birthday
+ *   Row 1 (header): ID | Origin | Team | Role | Name | Username | IP | Public IP | PC Name | MAC Address | BHS Email | Mobile | Birthday
  *   Row 2+:         data...
  */
 
 var VACATION_SHEET  = 'Vacation-Plan';
 var TEAM_INFO_SHEET = 'Team-Info';
-var VALID_TYPES     = ['Vacation', 'Compensation', 'Event'];
+var VALID_TYPES     = ['Vacation', 'Compensation', 'Special Leave'];
 
 // ── GET — diagnostic read of vacation rows ───────────────────────────────────
 function doGet() {
@@ -139,7 +139,7 @@ function handleVacation(payload) {
 // ── Profile update handler ────────────────────────────────────────────────────
 //
 // Finds the row where A=id AND F=authUsername, then updates allowed columns.
-// Team-Info columns: A=1:ID | B=2:DC | C=3:Team | D=4:Role | E=5:Name |
+// Team-Info columns: A=1:ID | B=2:Origin | C=3:Team | D=4:Role | E=5:Name |
 //                    F=6:Username | G=7:IP | H=8:Public IP | I=9:PC Name |
 //                    J=10:MAC Address | K=11:BHS Email | L=12:Mobile | M=13:Birthday
 //

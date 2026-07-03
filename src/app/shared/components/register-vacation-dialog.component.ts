@@ -172,7 +172,7 @@ export class RegisterVacationDialogComponent implements OnInit, OnDestroy {
   readonly typeOptions: TypeOption[] = [
     { value: 'Vacation',      label: 'Vacation',      activeClass: 'bg-[#003bc4] text-white border-[#003bc4]' },
     { value: 'Compensation',  label: 'Compensation',  activeClass: 'bg-[#06B6D4] text-white border-[#06B6D4]' },
-    { value: 'Event',         label: 'Event',         activeClass: 'bg-[#F97316] text-white border-[#F97316]' },
+    { value: 'Special Leave', label: 'Special Leave', activeClass: 'bg-[#F97316] text-white border-[#F97316]' },
   ];
 
   /** Dates the user has currently selected in the dialog. */

@@ -8,17 +8,19 @@ A lightweight team vacation scheduling SPA built with **Angular 20** and hosted 
 
 | Page | What it does |
 |---|---|
-| **Home** | Monthly calendar showing your vacations, teammates' absences, and public holidays. Right sidebar shows team stats and today's absentees with emoji avatars. |
+| **Home** | Monthly calendar showing your vacations, teammates' absences, public holidays, upcoming releases, and events. Right sidebar shows team stats and today's absentees with emoji avatars. |
 | **History** | Gantt timeline of all vacation registrations, grouped by month. Each member's scattered vacation days render as separate bars (one per consecutive run). Filterable by month and member name. The logged-in user's bars are highlighted in purple. Also available in calendar view. |
 | **Members** | Team cards (color-coded per team) and a full member table with emoji avatars, team color pills, role, and vacation-used count. Default shows top 10; expand to see all. |
 | **Holidays** | List of public holidays loaded from the spreadsheet. |
-| **Profile** | Editable profile for the logged-in user. Read-only: ID, Name, Role. Editable: Team, DC, IP, Public IP, PC Name, MAC Address, BHS Email, Mobile, Birthday, Username. Saved back to the spreadsheet via Apps Script. |
+| **Profile** | Editable profile for the logged-in user. Read-only: ID, Name, Role. Editable: Team, Origin, IP, Public IP, PC Name, MAC Address, BHS Email, Mobile, Birthday, Username. Saved back to the spreadsheet via Apps Script. |
 
 **Auth flow:** Enter your username in the Login dialog. If it matches a row in the Members sheet, you're logged in — no password. Session is persisted in `localStorage` so users stay logged in across page refreshes and return visits.
 
 **Register vacation:** Pick one or more future workdays in the calendar dialog. Deselecting a registered day removes it from the sheet. Submissions are rate-limited to one per 5 minutes per user (enforced client-side via `localStorage`).
 
-**Vacation types:** Each registration carries a type — `Vacation`, `Compensation`, or `Event` — stored as a fourth column in the Vacation-Plan sheet and displayed as a colored badge throughout the UI.
+**Vacation types:** Each registration carries a type — `Vacation`, `Compensation`, or `Special Leave` (e.g. maternity, bereavement) — stored as a fourth column in the Vacation-Plan sheet and displayed as a colored badge throughout the UI.
+
+**Releases & Events:** Company-wide release dates and events are pulled from the `ReleasePlan` and `EventPlan` named ranges in the `Database` sheet and shown as distinct badges (🚀 green for releases, 📅 blue for events) on the home calendar. Adding a row to either range surfaces it on the calendar automatically — no code changes needed.
 
 **Responsive layout:** Full support for desktop (≥1024px), tablet, and mobile. The sidebar is an off-canvas overlay on small screens with a hamburger toggle; it becomes an inline column on desktop. Calendar and timeline grids use horizontal scroll when viewport is too narrow.
 
@@ -31,7 +33,7 @@ A lightweight team vacation scheduling SPA built with **Angular 20** and hosted 
 - **Angular 20** — standalone components, lazy-loaded routes, `@angular/build:application` (Vite / esbuild)
 - **Tailwind CSS v3** — utility classes; dynamic team/type colors bound via `[style.xxx]` Angular bindings (Tailwind's JIT purger can't see runtime-computed class names)
 - **RxJS BehaviorSubject** — lightweight in-memory state (no NgRx); single `DataService` owns all streams
-- **Google Sheets API v4** — read-only data source for members, holidays, and vacation records
+- **Google Sheets API v4** — read-only data source for members, holidays, vacation records, releases, and events
 - **Google Apps Script** — write proxy for vacation submissions and profile updates (Sheets API requires OAuth for writes; Apps Script runs under the sheet owner's account)
 - **API Ninjas Riddles API** — header's daily riddle, with a `dummyjson.com` quote fallback on failure
 - **GitHub Actions + GitHub Pages** — CI/CD; pushes to `main` trigger a production build deployed to the `github-page` branch
@@ -46,7 +48,7 @@ All data lives in **one Google Spreadsheet** with three sheets:
 
 Thirteen columns, in order:
 
-| A: ID | B: DC | C: Team | D: Role | E: Display Name | F: Username | G: IP | H: Public IP | I: PC Name | J: MAC Address | K: BHS Email | L: Mobile | M: Birthday |
+| A: ID | B: Origin | C: Team | D: Role | E: Display Name | F: Username | G: IP | H: Public IP | I: PC Name | J: MAC Address | K: BHS Email | L: Mobile | M: Birthday |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1 | BHS | Engineering | Senior Dev | John Smith | john | 192.168.1.10 | 203.0.113.1 | BHS-PC-001 | AA:BB:CC:DD:EE:FF | john@bhs.com | +84 90 000 0000 | 15/06 |
 
@@ -64,13 +66,27 @@ Private fields (B, G–M) are only shown to the authenticated owner on the `/pro
 
 Date format is flexible — the parser handles `M/D/YYYY`, `DD/MM/YYYY`, ISO `YYYY-MM-DD`, and Google Sheets serial numbers. The `Country` field is used to filter VN-only holidays in the sidebar.
 
+### `Database` — named range `ReleasePlan` (columns G–H)
+
+| ReleaseDate | Release |
+|---|---|
+| 2026-07-15 | v2.4.0 |
+
+### `Database` — named range `EventPlan` (columns I–J)
+
+| EventDate | EventDesc |
+|---|---|
+| 2026-07-20 | Team building day |
+
+Both ranges use the same flexible date parsing as `Holidays`. New rows appear on the home calendar automatically on next load.
+
 ### `Vacation-Plan`
 
 | Month | Username | Date | Type |
 |---|---|---|---|
 | 06/2026 | john | 2026-06-15 | Vacation |
 
-One row per person per day. Month is `MM/YYYY` for grouping. Date is `YYYY-MM-DD`. Type is one of `Vacation`, `Compensation`, `Event` (defaults to `Vacation` if missing or unrecognised). Rows with `Type = Deleted` are filtered out at parse time (soft-delete). This sheet is managed exclusively by the Apps Script.
+One row per person per day. Month is `MM/YYYY` for grouping. Date is `YYYY-MM-DD`. Type is one of `Vacation`, `Compensation`, `Special Leave` (defaults to `Vacation` if missing or unrecognised). Rows with `Type = Deleted` are filtered out at parse time (soft-delete). This sheet is managed exclusively by the Apps Script.
 
 ---
 
@@ -159,13 +175,13 @@ Nav tiles filter based on auth state — guests see only Home and Holidays. Hist
 ```json
 { "action": "updateProfile", "id": "1", "authUsername": "john", "updates": { "mobile": "+84 90 111 2222" } }
 ```
-Finds the row where column A = `id` AND column F = `authUsername`. Updates any of: B (DC), C (Team), F (Username), G (IP), H (Public IP), I (PC Name), J (MAC Address), K (BHS Email), L (Mobile), M (Birthday). Uses `tryLock(10000)` to prevent concurrent writes.
+Finds the row where column A = `id` AND column F = `authUsername`. Updates any of: B (Origin), C (Team), F (Username), G (IP), H (Public IP), I (PC Name), J (MAC Address), K (BHS Email), L (Mobile), M (Birthday). Uses `tryLock(10000)` to prevent concurrent writes.
 
 **Vacation changes (default, `action` absent or `"vacation"`):**
 ```json
 { "username": "john", "month": "07/2026", "type": "Vacation", "addDates": ["2026-07-15"], "removeDates": ["2026-07-10"] }
 ```
-Validates `type` against `['Vacation', 'Compensation', 'Event']`, defaults to `'Vacation'`. `removeDates` are processed first — matching rows (by `username` + `date`) have their Type column set to `Deleted` (soft-delete). `addDates` are then appended as one new row each (`[month, username, date, type]`), deduplicated against every non-`Deleted` row already in the sheet for that `username + date` — so a previously deleted date can be freely re-added.
+Validates `type` against `['Vacation', 'Compensation', 'Special Leave']`, defaults to `'Vacation'`. `removeDates` are processed first — matching rows (by `username` + `date`) have their Type column set to `Deleted` (soft-delete). `addDates` are then appended as one new row each (`[month, username, date, type]`), deduplicated against every non-`Deleted` row already in the sheet for that `username + date` — so a previously deleted date can be freely re-added.
 
 The request body is sent as `Content-Type: text/plain` to keep the request "simple" (no CORS preflight). Apps Script follows a 302 redirect before responding; a preflight would not survive that redirect.
 

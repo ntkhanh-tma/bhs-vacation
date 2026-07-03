@@ -283,9 +283,9 @@ export class HistoryComponent implements OnInit, OnDestroy {
   private readonly EXPORT_WEEKEND_BG = '#E2E8F0';
   private readonly EXPORT_DIVIDER    = '#E2E8F0';
   private readonly EXPORT_TYPE_STYLE: Record<VacationType, { bg: string; fg: string; letter: string }> = {
-    Vacation:     { bg: '#DCFCE7', fg: '#16A34A', letter: 'V' },
-    Compensation: { bg: '#FFEDD5', fg: '#EA580C', letter: 'C' },
-    Event:        { bg: '#F3E8FF', fg: '#9333EA', letter: 'E' },
+    Vacation:        { bg: '#DCFCE7', fg: '#16A34A', letter: 'V' },
+    Compensation:    { bg: '#FFEDD5', fg: '#EA580C', letter: 'C' },
+    'Special Leave': { bg: '#F3E8FF', fg: '#9333EA', letter: 'S' },
   };
   private readonly EXPORT_HOLIDAY_STYLE = { bg: '#DBEAFE', fg: '#2563EB', letter: 'P' };
   // Deterministic per-team row tint — same djb2-style hash used for team colors elsewhere in the app.
@@ -593,7 +593,7 @@ export class HistoryComponent implements OnInit, OnDestroy {
       { bg: this.EXPORT_TYPE_STYLE.Vacation.bg, fg: this.EXPORT_TYPE_STYLE.Vacation.fg, label: 'Vacation (V)' },
       { bg: this.EXPORT_TYPE_STYLE.Compensation.bg, fg: this.EXPORT_TYPE_STYLE.Compensation.fg, label: 'Compensation (C)' },
       { bg: this.EXPORT_HOLIDAY_STYLE.bg, fg: this.EXPORT_HOLIDAY_STYLE.fg, label: 'VN Holiday (P)' },
-      { bg: this.EXPORT_TYPE_STYLE.Event.bg, fg: this.EXPORT_TYPE_STYLE.Event.fg, label: 'Event (E)' },
+      { bg: this.EXPORT_TYPE_STYLE['Special Leave'].bg, fg: this.EXPORT_TYPE_STYLE['Special Leave'].fg, label: 'Special Leave (S)' },
     ];
     let lx = gridLeft;
     ctx.textAlign = 'left';

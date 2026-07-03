@@ -325,25 +325,25 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   vacTypeChip(type: VacationType): string {
     if (type === 'Compensation') return '#0E7490';
-    if (type === 'Event') return '#C2410C';
+    if (type === 'Special Leave') return '#C2410C';
     return '#7E22CE';
   }
 
   vacTypeBgLight(type: VacationType): string {
     if (type === 'Compensation') return '#ECFEFF';
-    if (type === 'Event') return '#FFF7ED';
+    if (type === 'Special Leave') return '#FFF7ED';
     return '#FAF5FF';
   }
 
   vacTypeTextColor(type: VacationType): string {
     if (type === 'Compensation') return '#0E7490';
-    if (type === 'Event') return '#C2410C';
+    if (type === 'Special Leave') return '#C2410C';
     return '#7E22CE';
   }
 
   vacTypeLabel(type: VacationType): string {
     if (type === 'Compensation') return 'Comp Day';
-    if (type === 'Event') return 'Event Day';
+    if (type === 'Special Leave') return 'Special Leave';
     return 'Vacation Day';
   }
 

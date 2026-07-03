@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of, combineLatest } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
-import { Member, Holiday, Vacation, VacationType } from '../models/models';
+import { Member, Holiday, Vacation, VacationType, ReleasePlan, EventPlan } from '../models/models';
 import { ApiService, ProfileUpdatePayload } from './api.service';
 
 const LOCK_KEY    = 'vacation_submission_lock';
@@ -13,12 +13,16 @@ export class DataService {
   private membersSubject      = new BehaviorSubject<Member[]>([]);
   private holidaysSubject     = new BehaviorSubject<Holiday[]>([]);
   private vacationsSubject    = new BehaviorSubject<Vacation[]>([]);
+  private releasePlansSubject = new BehaviorSubject<ReleasePlan[]>([]);
+  private eventPlansSubject   = new BehaviorSubject<EventPlan[]>([]);
   private authenticatedUser$$ = new BehaviorSubject<Member | null>(null);
   private loading$$           = new BehaviorSubject<boolean>(true);
 
   readonly members$           = this.membersSubject.asObservable();
   readonly holidays$          = this.holidaysSubject.asObservable();
   readonly vacations$         = this.vacationsSubject.asObservable();
+  readonly releasePlans$      = this.releasePlansSubject.asObservable();
+  readonly eventPlans$        = this.eventPlansSubject.asObservable();
   readonly authenticatedUser$ = this.authenticatedUser$$.asObservable();
   readonly loading$           = this.loading$$.asObservable();
 
@@ -34,11 +38,15 @@ export class DataService {
       this.api.fetchMembers(),
       this.api.fetchHolidays(),
       this.api.fetchVacations(),
+      this.api.fetchReleasePlans(),
+      this.api.fetchEventPlans(),
     ]).subscribe({
-      next: ([members, holidays, vacations]) => {
+      next: ([members, holidays, vacations, releasePlans, eventPlans]) => {
         this.membersSubject.next(members);
         this.holidaysSubject.next(holidays);
         this.vacationsSubject.next(vacations);
+        this.releasePlansSubject.next(releasePlans);
+        this.eventPlansSubject.next(eventPlans);
         this.loading$$.next(false);
         // Auto-login from saved session
         try {

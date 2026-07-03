@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { take } from 'rxjs/operators';
-import { CalendarDay, Holiday, Member, Vacation, VacationType } from '../../core/models/models';
+import { CalendarDay, EventPlan, Holiday, Member, ReleasePlan, Vacation, VacationType } from '../../core/models/models';
 import { DataService } from '../../core/services/data.service';
 import { combineLatest } from 'rxjs';
 
@@ -18,7 +18,6 @@ import { combineLatest } from 'rxjs';
                 class="w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 shadow-sm text-[#003bc4] text-xl font-bold leading-none hover:bg-[#003bc4] hover:text-white hover:border-[#003bc4] hover:shadow-md hover:scale-110 active:scale-95 transition-all duration-200">&#8249;</button>
         <div class="text-center min-w-[170px]">
           <h2 class="text-xl font-bold text-[#1E293B]">{{ monthLabel }}</h2>
-          <p class="text-xs text-[#64748B]">{{ subtitle }}</p>
         </div>
         <button (click)="nextMonth()"
                 aria-label="Next month"
@@ -52,6 +51,22 @@ import { combineLatest } from 'rxjs';
                 <span [class]="getHolidayBadgeClass(h.country)"
                       class="text-[10px] rounded px-1 py-0.5 font-medium truncate leading-tight">
                   {{ getCountryFlag(h.country) }}{{ h.name }}
+                </span>
+              </ng-container>
+
+              <!-- Release badges -->
+              <ng-container *ngFor="let r of day.releases">
+                <span class="text-[10px] rounded px-1 py-0.5 font-medium truncate leading-tight bg-[#DCFCE7] text-[#15803D]"
+                      [title]="'Release — ' + r.release">
+                  🚀 {{ r.release }}
+                </span>
+              </ng-container>
+
+              <!-- Event badges -->
+              <ng-container *ngFor="let e of day.events">
+                <span class="text-[10px] rounded px-1 py-0.5 font-medium truncate leading-tight bg-[#DBEAFE] text-[#1D4ED8]"
+                      [title]="'Event — ' + e.description">
+                  📅 {{ e.description }}
                 </span>
               </ng-container>
 
@@ -108,7 +123,13 @@ import { combineLatest } from 'rxjs';
           <span class="w-3 h-3 rounded-sm bg-[#06B6D4]"></span> Compensation
         </div>
         <div class="flex items-center gap-1.5 text-sm text-[#64748B]">
-          <span class="w-3 h-3 rounded-sm bg-[#F97316]"></span> Event
+          <span class="w-3 h-3 rounded-sm bg-[#F97316]"></span> Special Leave
+        </div>
+        <div class="flex items-center gap-1.5 text-sm text-[#64748B]">
+          <span class="w-3 h-3 rounded-sm bg-[#DCFCE7]"></span> 🚀 Release
+        </div>
+        <div class="flex items-center gap-1.5 text-sm text-[#64748B]">
+          <span class="w-3 h-3 rounded-sm bg-[#DBEAFE]"></span> 📅 Event
         </div>
         <div class="flex items-center gap-1.5 text-sm text-[#64748B]">
           <span class="w-3 h-3 rounded-sm bg-[#F7C873]"></span> 🇦🇺 Holiday
@@ -139,16 +160,6 @@ export class CalendarComponent implements OnInit {
       .toLocaleDateString('en-AU', { month: 'long', year: 'numeric' });
   }
 
-  get subtitle(): string {
-    const today = new Date();
-    const day = today.getDate();
-    const earliestMonth = today.getMonth() + 1 + (day >= 20 ? 2 : 1);
-    const e = { year: today.getFullYear(), month: earliestMonth > 12 ? earliestMonth - 12 : earliestMonth };
-    const eLabel = new Date(e.year, e.month - 1, 1)
-      .toLocaleDateString('en-AU', { month: 'long', year: 'numeric' });
-    return `Earliest registerable: ${eLabel}`;
-  }
-
   constructor(private dataService: DataService) {}
 
   ngOnInit(): void {
@@ -161,14 +172,22 @@ export class CalendarComponent implements OnInit {
     combineLatest([
       this.dataService.vacations$,
       this.dataService.holidays$,
+      this.dataService.releasePlans$,
+      this.dataService.eventPlans$,
       this.dataService.authenticatedUser$,
-    ]).subscribe(([vacations, holidays, user]) => {
+    ]).subscribe(([vacations, holidays, releases, events, user]) => {
       this.currentUser = user;
-      this.buildCalendar(vacations, holidays, user);
+      this.buildCalendar(vacations, holidays, releases, events, user);
     });
   }
 
-  buildCalendar(vacations: Vacation[], holidays: Holiday[], user: Member | null): void {
+  buildCalendar(
+    vacations: Vacation[],
+    holidays: Holiday[],
+    releases: ReleasePlan[],
+    events: EventPlan[],
+    user: Member | null,
+  ): void {
     const today = new Date();
     const firstDay = new Date(this.viewYear, this.viewMonth - 1, 1);
     const lastDay  = new Date(this.viewYear, this.viewMonth, 0);
@@ -186,6 +205,8 @@ export class CalendarComponent implements OnInit {
       const isToday   = dateStr === this.dataService.formatDate(today);
       const isPast    = date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const dayHolidays = holidays.filter(h => h.date === dateStr);
+      const dayReleases = releases.filter(r => r.date === dateStr);
+      const dayEvents   = events.filter(e => e.date === dateStr);
 
       const dayVacations    = vacations.filter(v => v.date === dateStr);
       const yourVacation    = user ? dayVacations.find(v => v.username === user.username) : undefined;
@@ -194,20 +215,30 @@ export class CalendarComponent implements OnInit {
         .map(v => ({ vacation: v, member: this.dataService.getMemberByUsername(v.username)! }))
         .filter(x => !!x.member);
 
-      days.push({ date, isCurrentMonth: true, isWeekend, isToday, isPast, holidays: dayHolidays, yourVacation, othersVacations });
+      days.push({
+        date, isCurrentMonth: true, isWeekend, isToday, isPast,
+        holidays: dayHolidays, releases: dayReleases, events: dayEvents,
+        yourVacation, othersVacations,
+      });
     }
 
     const remaining = (7 - (days.length % 7)) % 7;
     for (let i = 0; i < remaining; i++) {
       const date = new Date(this.viewYear, this.viewMonth, i + 1);
-      days.push({ date, isCurrentMonth: false, isWeekend: false, isToday: false, isPast: false, holidays: [], yourVacation: undefined, othersVacations: [] });
+      days.push({
+        date, isCurrentMonth: false, isWeekend: false, isToday: false, isPast: false,
+        holidays: [], releases: [], events: [], yourVacation: undefined, othersVacations: [],
+      });
     }
 
     this.calendarDays = days;
   }
 
   emptyDay(): CalendarDay {
-    return { date: null as any, isCurrentMonth: false, isWeekend: false, isToday: false, isPast: false, holidays: [], yourVacation: undefined, othersVacations: [] };
+    return {
+      date: null as any, isCurrentMonth: false, isWeekend: false, isToday: false, isPast: false,
+      holidays: [], releases: [], events: [], yourVacation: undefined, othersVacations: [],
+    };
   }
 
   // ── Expand / collapse per-cell ────────────────────────────────────────────
@@ -273,16 +304,16 @@ export class CalendarComponent implements OnInit {
   }
 
   getYourVacationClass(type: VacationType): string {
-    if (type === 'Compensation') return 'bg-[#06B6D4] text-white';
-    if (type === 'Event')        return 'bg-[#F97316] text-white';
+    if (type === 'Compensation')  return 'bg-[#06B6D4] text-white';
+    if (type === 'Special Leave') return 'bg-[#F97316] text-white';
     return 'bg-[#B48CF2] text-white';
   }
 
   /** Matches the legend swatches — used as a small dot on teammates' strips
    *  so type stays visible even though the strip itself is colored per-person. */
   getTypeDotColor(type: VacationType): string {
-    if (type === 'Compensation') return '#06B6D4';
-    if (type === 'Event')        return '#F97316';
+    if (type === 'Compensation')  return '#06B6D4';
+    if (type === 'Special Leave') return '#F97316';
     return '#B48CF2';
   }
 
@@ -292,21 +323,23 @@ export class CalendarComponent implements OnInit {
     if (this.viewMonth === 1) { this.viewMonth = 12; this.viewYear--; }
     else this.viewMonth--;
     this.expandedDates = new Set();
-    combineLatest([
-      this.dataService.vacations$,
-      this.dataService.holidays$,
-      this.dataService.authenticatedUser$,
-    ]).pipe(take(1)).subscribe(([v, h, u]) => this.buildCalendar(v, h, u));
+    this.reload();
   }
 
   nextMonth(): void {
     if (this.viewMonth === 12) { this.viewMonth = 1; this.viewYear++; }
     else this.viewMonth++;
     this.expandedDates = new Set();
+    this.reload();
+  }
+
+  private reload(): void {
     combineLatest([
       this.dataService.vacations$,
       this.dataService.holidays$,
+      this.dataService.releasePlans$,
+      this.dataService.eventPlans$,
       this.dataService.authenticatedUser$,
-    ]).pipe(take(1)).subscribe(([v, h, u]) => this.buildCalendar(v, h, u));
+    ]).pipe(take(1)).subscribe(([v, h, r, e, u]) => this.buildCalendar(v, h, r, e, u));
   }
 }

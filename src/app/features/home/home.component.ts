@@ -7,6 +7,31 @@ import { RegisterVacationDialogComponent } from '../../shared/components/registe
 import { LeaveReminderDialogComponent } from '../../shared/components/leave-reminder-dialog.component';
 import { combineLatest } from 'rxjs';
 
+interface TeamColor {
+  bg: string;
+  border: string;
+  text: string;
+}
+
+const TEAM_COLORS: TeamColor[] = [
+  { bg: '#EFF6FF', border: '#3B82F6', text: '#1D4ED8' },  // blue
+  { bg: '#F0FDF4', border: '#22C55E', text: '#15803D' },  // green
+  { bg: '#FFF7ED', border: '#F97316', text: '#C2410C' },  // orange
+  { bg: '#FDF4FF', border: '#A855F7', text: '#7E22CE' },  // purple
+  { bg: '#FFF1F2', border: '#F43F5E', text: '#BE123C' },  // rose
+  { bg: '#ECFEFF', border: '#06B6D4', text: '#0E7490' },  // cyan
+  { bg: '#FFFBEB', border: '#F59E0B', text: '#B45309' },  // amber
+  { bg: '#F0F9FF', border: '#0EA5E9', text: '#0369A1' },  // sky
+  { bg: '#F7FEE7', border: '#84CC16', text: '#4D7C0F' },  // lime
+  { bg: '#FFF0F0', border: '#EF4444', text: '#B91C1C' },  // red
+];
+
+const teamColorOf = (name: string): TeamColor => {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (Math.imul(31, h) + name.charCodeAt(i)) | 0;
+  return TEAM_COLORS[Math.abs(h) % TEAM_COLORS.length];
+};
+
 @Component({
   selector: 'app-home',
   standalone: true,
@@ -17,7 +42,7 @@ import { combineLatest } from 'rxjs';
       <div class="flex-1 min-w-0">
         <div class="mb-6">
           <div class="flex items-center gap-3 flex-wrap">
-            <h1 class="text-2xl font-bold text-[#1E293B]">Welcome! Plan your time off.</h1>
+            <h1 class="text-2xl font-bold text-[#1E293B]">Welcome! Plan your time, track releases and events.</h1>
             <button
               *ngIf="currentUser"
               (click)="showRegisterDialog = true"
@@ -27,7 +52,7 @@ import { combineLatest } from 'rxjs';
               Register Vacation
             </button>
           </div>
-          <p class="text-[#64748B] text-sm mt-1">View team availability and register your vacation.</p>
+          <p class="text-[#64748B] text-sm mt-1">View team availability, upcoming releases and events, and register your vacation.</p>
         </div>
         <app-calendar></app-calendar>
       </div>
@@ -67,16 +92,22 @@ import { combineLatest } from 'rxjs';
         <div class="bg-white rounded-xl border border-gray-100 p-4">
           <p class="text-sm font-semibold text-[#1E293B] mb-1">Today</p>
           <p class="text-xs text-[#64748B] mb-3">{{ todayAbsentees.length }} members absent</p>
-          <div class="flex flex-wrap gap-1">
+          <div class="flex flex-col gap-2">
             <div
-              *ngFor="let a of todayAbsentees.slice(0, 3)"
-              class="w-8 h-8 rounded-full flex items-center justify-center bg-gray-100 text-xl select-none"
-              [title]="a.member.name"
+              *ngFor="let a of todayAbsentees"
+              class="flex items-center gap-2 rounded-lg border p-2"
+              [style.background-color]="getTeamColor(a.member.department).bg"
+              [style.border-color]="getTeamColor(a.member.department).border"
             >
-              {{ a.member.avatarUrl }}
-            </div>
-            <div *ngIf="todayAbsentees.length > 3" class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs text-[#64748B] font-medium">
-              +{{ todayAbsentees.length - 3 }}
+              <div
+                class="w-7 h-7 rounded-full flex items-center justify-center text-base flex-shrink-0 select-none bg-white/60"
+              >
+                {{ a.member.avatarUrl }}
+              </div>
+              <div class="min-w-0">
+                <p class="text-xs font-semibold truncate" [style.color]="getTeamColor(a.member.department).text">{{ a.member.name }}</p>
+                <p class="text-[11px] truncate" [style.color]="getTeamColor(a.member.department).text">{{ a.member.department }}</p>
+              </div>
             </div>
           </div>
           <p *ngIf="todayAbsentees.length === 0" class="text-xs text-[#64748B]">Everyone is in today!</p>
@@ -129,5 +160,9 @@ export class HomeComponent implements OnInit {
   onVacationRegistered(): void {
     this.todayAbsentees = this.dataService.getTodayAbsentees();
     this.showLeaveReminder = true;
+  }
+
+  getTeamColor(team: string): TeamColor {
+    return teamColorOf(team);
   }
 }

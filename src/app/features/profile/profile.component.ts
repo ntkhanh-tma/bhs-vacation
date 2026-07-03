@@ -144,12 +144,12 @@ const SELECT_STYLE = `background-image:${CHEVRON_SVG};background-repeat:no-repea
                         </div>
                       </div>
                       <div>
-                        <label class="block text-xs font-semibold text-[#475569] mb-1.5">DC</label>
+                        <label class="block text-xs font-semibold text-[#475569] mb-1.5">Origin</label>
                         <div class="relative">
                           <select [(ngModel)]="form.dc"
                                   class="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none cursor-pointer text-[#1E293B]"
                                   [style]="selectStyle">
-                            <option value="">Select DC…</option>
+                            <option value="">Select Origin…</option>
                             <option *ngIf="form.dc && !lookups.dcs.includes(form.dc)" [value]="form.dc">{{ form.dc }}</option>
                             <option *ngFor="let d of lookups.dcs" [value]="d">{{ d }}</option>
                           </select>
