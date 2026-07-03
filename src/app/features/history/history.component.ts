@@ -78,9 +78,17 @@ interface MonthGroup {
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-base font-semibold text-[#1E293B]">{{ group.label }}</h3>
           <button (click)="exportMonth(group)"
+                  [disabled]="isExporting(group)"
                   title="Export month as image"
-                  class="flex items-center gap-1.5 bg-green-600 text-white px-3.5 py-2 rounded-lg text-sm font-medium hover:bg-green-700 whitespace-nowrap flex-shrink-0 transition-colors">
-            &#128247; Export
+                  class="flex items-center gap-1.5 bg-green-600 text-white px-3.5 py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0 transition-colors">
+            <svg *ngIf="isExporting(group)" class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+              <circle class="opacity-25" cx="12" cy="12" r="10"
+                      stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            <ng-container *ngIf="!isExporting(group)">&#128247; Export</ng-container>
+            <ng-container *ngIf="isExporting(group)">Exporting&#8230;</ng-container>
           </button>
         </div>
 
@@ -297,6 +305,8 @@ export class HistoryComponent implements OnInit, OnDestroy {
   activeBtn   = 'px-3 py-1.5 text-sm rounded-lg bg-[#003bc4] text-white font-medium';
   inactiveBtn = 'px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-[#64748B] hover:bg-gray-50';
 
+  exportingKey: string | null = null;
+
   constructor(private dataService: DataService, private router: Router, private ngZone: NgZone) {}
 
   ngOnDestroy(): void {
@@ -444,7 +454,19 @@ export class HistoryComponent implements OnInit, OnDestroy {
   // to a <canvas>, then shows it in a preview modal with Copy/Download actions.
   // No server round-trip, no library — the report is just rounded rects + text.
 
+  isExporting(group: MonthGroup): boolean {
+    return this.exportingKey === `${group.year}-${group.month}`;
+  }
+
   exportMonth(group: MonthGroup): void {
+    if (this.exportingKey) return;
+    this.exportingKey = `${group.year}-${group.month}`;
+    // Defer the synchronous canvas render a tick so the browser can paint the
+    // disabled/spinner state on the button before the main thread blocks.
+    setTimeout(() => this.renderExport(group), 0);
+  }
+
+  private renderExport(group: MonthGroup): void {
     const rows = [...group.entries].sort((a, b) =>
       a.member.department.localeCompare(b.member.department) ||
       a.member.position.localeCompare(b.member.position) ||
@@ -619,6 +641,7 @@ export class HistoryComponent implements OnInit, OnDestroy {
       // canvas.toBlob's callback isn't patched by zone.js, so re-enter Angular's
       // zone explicitly — otherwise these updates never trigger change detection.
       this.ngZone.run(() => {
+        this.exportingKey = null;
         if (!blob) return;
         if (this.previewImageUrl) URL.revokeObjectURL(this.previewImageUrl);
         this.previewBlob = blob;

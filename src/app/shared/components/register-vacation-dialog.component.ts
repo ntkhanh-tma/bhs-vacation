@@ -41,7 +41,8 @@ interface TypeOption {
             </p>
           </div>
           <button (click)="close.emit()"
-                  class="text-[#64748B] hover:text-[#1E293B] text-xl leading-none">&times;</button>
+                  [disabled]="submitting"
+                  class="text-[#64748B] hover:text-[#1E293B] text-xl leading-none disabled:opacity-40 disabled:cursor-not-allowed">&times;</button>
         </div>
 
         <!-- Type selector -->
@@ -133,7 +134,8 @@ interface TypeOption {
         <!-- Actions -->
         <div class="flex gap-3 mt-4">
           <button (click)="close.emit()"
-                  class="flex-1 border border-gray-200 text-[#1E293B] rounded-lg py-2.5 text-sm font-medium hover:bg-gray-50">
+                  [disabled]="submitting"
+                  class="flex-1 border border-gray-200 text-[#1E293B] rounded-lg py-2.5 text-sm font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
             Cancel
           </button>
           <button (click)="onSubmit()"
@@ -459,6 +461,7 @@ export class RegisterVacationDialogComponent implements OnInit, OnDestroy {
   }
 
   onBackdropClick(_event: MouseEvent): void {
+    if (this.submitting) return;
     this.close.emit();
   }
 }

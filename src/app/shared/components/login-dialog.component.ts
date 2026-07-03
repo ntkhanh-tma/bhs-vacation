@@ -22,8 +22,13 @@ import { DataService } from '../../core/services/data.service';
         </div>
 
         <!-- Loading state while members are fetched -->
-        <div *ngIf="loading" class="text-center py-6 text-[#64748B] text-sm">
-          <div class="text-2xl mb-2">⏳</div>
+        <div *ngIf="loading" class="flex flex-col items-center py-6 text-[#64748B] text-sm">
+          <svg class="animate-spin h-6 w-6 mb-2 text-[#003bc4]" viewBox="0 0 24 24" fill="none">
+            <circle class="opacity-25" cx="12" cy="12" r="10"
+                    stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
           Loading member list…
         </div>
 
