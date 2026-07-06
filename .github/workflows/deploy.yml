@@ -5,27 +5,26 @@ on:
     branches: [main]
   workflow_dispatch:        # allow manual trigger from the Actions tab
 
-# Only one deployment at a time; cancel any in-progress run for the same ref.
+# GitHub's own recommended pattern for Actions-based Pages deploys: a single
+# queue, never cancel a deployment that's already in flight.
 concurrency:
-  group: deploy-${{ github.ref }}
-  cancel-in-progress: true
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
-  build-and-deploy:
-    name: Build → github-page branch
+  build:
+    name: Build
     runs-on: ubuntu-latest
-
-    # Need write access to push the github-page branch.
-    permissions:
-      contents: write
 
     steps:
       # ── 1. Source checkout ────────────────────────────────────────────────
       - name: Checkout main
         uses: actions/checkout@v4
-        with:
-          # Full history needed so we can push to a different branch later.
-          fetch-depth: 0
 
       # ── 2. Node.js ───────────────────────────────────────────────────────
       - name: Set up Node.js 22
@@ -97,46 +96,23 @@ jobs:
           cp docs/index.html docs/404.html
           touch docs/.nojekyll
 
-      # ── 8. Push docs/ to github-page branch ─────────────────────────────
-      #
-      # Strategy:
-      #   a) Move ./docs out of the git working tree.
-      #   b) Check out (or create orphan) the github-page branch.
-      #   c) Wipe the working tree so the branch only contains what we publish.
-      #   d) Restore ./docs and add a root-level .nojekyll.
-      #   e) Commit & force-push.
-      #
-      - name: Deploy to github-page branch
-        run: |
-          # Save built output before switching branches
-          cp -r docs /tmp/angular-docs
+      # ── 8. Upload build for the Pages deployment job ─────────────────────
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
 
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # Check out existing branch or start an orphan
-          if git show-ref --verify --quiet refs/remotes/origin/github-page; then
-            git checkout -B github-page origin/github-page
-          else
-            git checkout --orphan github-page
-            git rm -rf . --quiet 2>/dev/null || true
-          fi
-
-          # Wipe everything (tracked + untracked), keep only .git/
-          git rm -rf . --quiet 2>/dev/null || true
-          find . -maxdepth 1 ! -name '.git' ! -name '.' -exec rm -rf {} + 2>/dev/null || true
-
-          # Restore the build
-          cp -r /tmp/angular-docs docs
-          touch .nojekyll
-
-          # Commit (skip if nothing changed)
-          git add -A
-          if git diff --staged --quiet; then
-            echo "Nothing new to deploy — skipping commit."
-          else
-            SHORT_SHA="${GITHUB_SHA::7}"
-            git commit -m "deploy: ${SHORT_SHA} ($(date -u '+%Y-%m-%d %H:%M UTC'))"
-            git push origin github-page --force-with-lease 2>/dev/null \
-              || git push origin github-page --force
-          fi
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
